@@ -1,0 +1,7 @@
+{
+  "corob.com": { "role": "corob_employee" },
+
+  "akzonobel.com": { "role": "customer", "company": "AKZO Nobel Paints" },
+  "asianpaints.com": { "role": "customer", "company": "Asian Paints Ltd" },
+  "birlaopus.com": { "role": "customer", "company": "Birla Opus Paints" }
+}

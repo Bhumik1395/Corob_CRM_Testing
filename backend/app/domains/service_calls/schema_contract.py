@@ -1,0 +1,37 @@
+SCHEMA_CONTRACT = {
+    "sheet_name": "Service Data",
+    "required_columns": [
+        "Customer Name",
+        "ZM/State",
+        "Region",
+        "Machine No.",
+        "Status",
+        "Call Date",
+        "Eng Code",
+        "Owned By",
+        "LOC/UP/REM",
+        "Call Forwarded to",
+    ],
+    "max_rows": 200_000,
+}
+
+COLUMN_MAP = {
+    "Customer Name": "customer",
+    "ZM/State": "state",
+    "Region": "region",
+    "Machine No.": "machine_no",
+    "Call Date": "call_date",
+    "Visit Verification": "visit_type",
+    "Service Type": "service_type",
+    "Service Type": "service_type",
+    "Eng Code": "eng_code",
+    "Owned By": "employee_name",
+    "Call Attended date": "call_attended_date",
+    "Call Close Date": "call_close_date",
+    "LOC/UP/REM": "loc_up_rem",
+    "Call Forwarded to": "supervisor",
+    "Dealer Code": "dealer_code",
+    "Dealer Name": "dealer_name",
+    "City/Location": "city",
+    "Remarks/Solution Provided": "remarks",
+}

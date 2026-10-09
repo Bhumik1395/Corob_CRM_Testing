@@ -1,0 +1,12 @@
+{
+    "rewrites": [
+        {
+            "source": "/pm-pdfs/(.*)",
+            "destination": "/pm-pdfs/$1"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}
