@@ -5,17 +5,17 @@ import { useAuth } from "../auth/AuthContext";
 import { AuthInitSkeleton } from "../components/skeletons/Authinitskeleton";
 import corobLogo from "../assets/corob-logo.png";
 
-/**
- * Image shown on the right, under the logo.
- * To add it: put the file in frontend/public (for example public/login-image.jpg)
- * and set this to "/login-image.jpg". While it is null a placeholder is shown.
- */
+
+
+
+
+
 const LOGIN_IMAGE: string | null = null;
 
-/**
- * Wavy left edge, in 0-1 coordinates so it scales with the box.
- * It is used three times, shifted left each time, to build the stacked "paper" layers.
- */
+
+
+
+
 const WAVE =
     "M0.26,0 C0.15,0.14 0.34,0.24 0.23,0.38 C0.13,0.51 0.27,0.60 0.18,0.74 C0.12,0.84 0.20,0.93 0.15,1 L1,1 L1,0 Z";
 
@@ -55,11 +55,11 @@ export default function Login() {
 
     return (
         <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-bg p-4 sm:p-8">
-            {/* Soft blurred green blobs behind the card */}
+
             <div aria-hidden className="pointer-events-none absolute -left-24 top-8 h-80 w-80 rounded-full bg-green/20 blur-3xl" />
             <div aria-hidden className="pointer-events-none absolute -bottom-24 -right-16 h-96 w-96 rounded-full bg-forest/15 blur-3xl" />
 
-            {/* Clip paths for the wavy image edge (invisible, referenced by id) */}
+
             <svg width="0" height="0" className="absolute" aria-hidden focusable="false">
                 <defs>
                     <clipPath id="login-wave-1" clipPathUnits="objectBoundingBox">
@@ -75,10 +75,10 @@ export default function Login() {
             </svg>
 
             <div className="relative grid w-full max-w-5xl overflow-hidden rounded-[2rem] bg-surface shadow-[0_20px_60px_rgba(20,40,30,0.14)] lg:min-h-[600px] lg:grid-cols-2">
-                {/* Left: sign-in */}
+
                 <div className="flex items-center justify-center px-8 py-12 sm:px-14">
                     <form onSubmit={handleSubmit} className="w-full max-w-xs">
-                        {/* The right-hand panel is hidden on small screens, so show the logo here instead. */}
+
                         <img src={corobLogo} alt="Corob" className="mx-auto mb-8 h-8 w-auto lg:hidden" />
 
                         <h1 className="mb-8 text-center text-2xl font-medium text-[#3F4D47]">Sign in</h1>
@@ -140,13 +140,13 @@ export default function Login() {
                     </form>
                 </div>
 
-                {/* Right: logo, then the image with a layered wavy edge */}
+
                 <aside className="hidden flex-col lg:flex">
                     <div className="flex h-28 shrink-0 items-center justify-center">
                         <img src={corobLogo} alt="Corob" className="h-10 w-auto" />
                     </div>
 
-                    {/* drop-shadow on the wrapper gives the stacked layers their depth */}
+
                     <div
                         className="relative min-h-[360px] flex-1"
                         style={{ filter: "drop-shadow(-4px 2px 8px rgba(20,40,30,0.14))" }}

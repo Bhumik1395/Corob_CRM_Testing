@@ -6,13 +6,12 @@ import pandas as pd
 
 from app.core.auth_config import PM_DATA_TTL_SECONDS
 from app.core.db import get_connection
-from app.domains.pm.common import ALL_COMPANIES
+from app.domains.pm.common import ALL_COMPANIES, resolve_company
 from app.domains.pm.excel_service import dedupe_pm_rows
 
 
 def _slug(company: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", company.strip().lower()).strip("-")
-
 
 def get_pm_data(company: str) -> pd.DataFrame | None:
     slug = _slug(company)
@@ -88,9 +87,25 @@ def save_pm_data(company: str, df: pd.DataFrame) -> int:
     return len(combined)
 
 
-def delete_pm_data(company: str) -> bool:
-    """Wipes all stored PM data for a company. True if there was anything to delete."""
+def delete_all_pm_data() -> int:
+    """Wipes every company's stored PM data. Returns the number of rows deleted."""
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM pm_data WHERE company_slug = %s", (_slug(company),))
+            cur.execute("DELETE FROM pm_data")
+            return cur.rowcount
+
+
+def delete_pm_data(company: str) -> bool:
+    """Delete stored PM data for one company and report whether it existed."""
+    slug = _slug(company)
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM pm_data WHERE company_slug = %s", (slug,))
             return cur.rowcount > 0
+
+
+def load_pm_df(user, company_param):
+    """One company's PM data, or (employees only) every company with __all__."""
+    if user.is_corob_employee and company_param == ALL_COMPANIES:
+        return get_all_pm_data()
+    return get_pm_data(resolve_company(user, company_param))

@@ -6,7 +6,7 @@ import pandas as pd
 
 from app.core.db import get_connection
 
-SESSION_TTL_SECONDS = 3600  # matches old SESSION_TTL_SECONDS; move to config.py if you prefer
+SESSION_TTL_SECONDS = 3600
 
 
 def create_session(df: pd.DataFrame) -> str:
@@ -35,7 +35,7 @@ def get_session_data(session_id: str) -> pd.DataFrame:
             if row is None:
                 raise KeyError("session_expired")
 
-            # reads refresh the TTL, matching the old Redis behaviour
+
             new_expiry = datetime.utcnow() + timedelta(seconds=SESSION_TTL_SECONDS)
             cur.execute(
                 "UPDATE service_call_sessions SET expires_at = %s WHERE session_id = %s",

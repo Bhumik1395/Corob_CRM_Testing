@@ -103,7 +103,7 @@ def compute_pm_dashboard(
             detail_source["dealer_code"].str.contains(dealer_code, case=False, na=False, regex=False)
         ]
 
-    detail_cols = ["ticket_no", "dealer_code", "dealer_name", "call_date", "remarks"]
+    detail_cols = ["ticket_no", "company", "dealer_code", "dealer_name", "call_date", "remarks"]
     available_detail_cols = [c for c in detail_cols if c in detail_source.columns]
     total_detail_rows = len(detail_source)
     start = (page - 1) * page_size

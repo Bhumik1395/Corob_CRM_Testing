@@ -23,8 +23,8 @@ CREATE TABLE users (
 );
 
 CREATE TABLE service_call_sessions (
-    session_id   CHAR(36) PRIMARY KEY,           
-    payload      LONGBLOB NOT NULL,              
+    session_id   CHAR(36) PRIMARY KEY,
+    payload      LONGBLOB NOT NULL,
     expires_at   DATETIME NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_expires (expires_at)
@@ -33,7 +33,7 @@ CREATE TABLE service_call_sessions (
 CREATE TABLE pm_data (
     company_slug VARCHAR(255) PRIMARY KEY,
     company_name VARCHAR(255) NOT NULL,
-    payload      LONGBLOB NOT NULL,                
+    payload      LONGBLOB NOT NULL,
     expires_at   DATETIME NOT NULL,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_expires (expires_at)

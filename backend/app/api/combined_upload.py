@@ -2,7 +2,7 @@ import io
 
 import openpyxl
 import pandas as pd
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
 
 from app.core.auth import CurrentUser, require_roles
 from app.core.config import SESSION_TTL_SECONDS
@@ -32,8 +32,9 @@ def _sheet_names(file_bytes: bytes) -> set[str]:
 
 @router.post("/api/upload/combined")
 def upload_combined(
+    request: Request,
+    response: Response,
     files: list[UploadFile] = File(...),
-    response: Response = None,
     user: CurrentUser = Depends(require_roles("corob_employee")),
 ):
     if not files:
@@ -109,7 +110,10 @@ def upload_combined(
 
     if service_frames:
         combined_service = pd.concat(service_frames, ignore_index=True)
-        session_id = create_session(combined_service)
+        session_id = create_session(
+            combined_service,
+            old_session_id=request.cookies.get("session_id"),
+        )
         response.set_cookie(
             key="session_id",
             value=session_id,

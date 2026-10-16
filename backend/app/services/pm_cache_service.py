@@ -1,7 +1,7 @@
 import io
 import re
 import pandas as pd
-from app.domains.service_calls.session_cache import r  # reuse the same Redis/Valkey connection
+from app.domains.service_calls.session_cache import r
 from app.core.auth_config import PM_DATA_TTL_SECONDS
 from app.domains.pm.excel_service import dedupe_pm_rows
 
@@ -16,7 +16,7 @@ def get_pm_data(company: str) -> pd.DataFrame | None:
     if raw is None:
         return None
     df = pd.read_pickle(io.BytesIO(raw), compression="gzip")
-    r.expire(_company_key(company), PM_DATA_TTL_SECONDS)  # reads refresh the TTL too
+    r.expire(_company_key(company), PM_DATA_TTL_SECONDS)
     return df
 
 

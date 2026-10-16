@@ -1,10 +1,10 @@
 USE corob_service;
 CREATE TABLE IF NOT EXISTS pm_phrase_rules (
     id           INT AUTO_INCREMENT PRIMARY KEY,
-    phrase       VARCHAR(255) NOT NULL UNIQUE,           
+    phrase       VARCHAR(255) NOT NULL UNIQUE,
     label        ENUM('PM Done', 'Dispute') NOT NULL,
     answered_by  VARCHAR(255) NOT NULL,
-    is_active    BOOLEAN NOT NULL DEFAULT TRUE,         
+    is_active    BOOLEAN NOT NULL DEFAULT TRUE,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

@@ -9,7 +9,7 @@ export interface NavItem {
     to: string;
     label: string;
     icon: LucideIcon;
-    /** Match the path exactly (needed when another item lives under this path). */
+
     end?: boolean;
 }
 
@@ -40,7 +40,7 @@ export default function AppLayout({
     footer,
 }: {
     navItems: NavItem[];
-    /** Rendered below the main items, just above the footer card. */
+
     pinnedItems?: NavItem[];
     username: string | null;
     roleLabel: string;

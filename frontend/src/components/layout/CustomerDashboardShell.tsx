@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart2, UploadCloud } from "lucide-react";
+import { BarChart2, Printer, UploadCloud } from "lucide-react";
 import { useAuth } from "../../auth/AuthContext";
 import { deleteAllPmData } from "../../api/pm";
 import { ConfirmModal } from "../ConfirmModal";
@@ -8,6 +8,7 @@ import type { NavItem } from "./AppLayout";
 
 const navItems: NavItem[] = [
     { to: "/customer/pm", label: "PM Overview", icon: BarChart2, end: true },
+    { to: "/customer/pm/print", label: "Print Docs", icon: Printer },
     { to: "/customer/pm/upload", label: "Upload Data", icon: UploadCloud },
 ];
 
@@ -21,7 +22,7 @@ export default function CustomerDashboardShell() {
         try {
             await deleteAllPmData(token!);
         } catch {
-            // Sign-out proceeds even if the delete call fails.
+
         } finally {
             logout();
         }

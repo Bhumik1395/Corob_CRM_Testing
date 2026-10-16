@@ -160,6 +160,17 @@ export default function FocusMode() {
                     <option value="Service">Service</option>
                     <option value="Other">Other</option>
                 </Select>
+                <Select
+                    className="w-32"
+                    aria-label="Year"
+                    value={filters.year ?? ""}
+                    onChange={(e) => updateFilter("year", e.target.value)}
+                >
+                    <option value="">All Years</option>
+                    {filterOptions?.years?.map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                    ))}
+                </Select>
                 {isFetching && !isLoading && <span className="text-xs text-muted">Updating…</span>}
             </div>
 

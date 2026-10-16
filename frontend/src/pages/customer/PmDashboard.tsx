@@ -10,10 +10,12 @@ import { PmRuleQuiz } from "../../components/PmRuleQuiz";
 import { PmRuleHistory } from "../../components/PmRuleHistory";
 import { Card } from "../../components/ui/Card";
 import { KpiCard } from "../../components/ui/KpiCard";
+import { Legend } from "../../components/ui/Legend";
 import { Pagination } from "../../components/ui/Pagination";
 import { Segmented } from "../../components/ui/Segmented";
 import { Select } from "../../components/ui/Select";
 import { formatMonthFull, formatMonthShort } from "../../lib/format";
+import { COLORS } from "../../lib/palette";
 
 const ALL = "__all__";
 
@@ -32,6 +34,7 @@ export default function PmDashboard() {
 
     const [trendView, setTrendView] = useState<TrendView>("monthly");
     const [weeklyMonth, setWeeklyMonth] = useState<string | undefined>(undefined);
+    const [trendYear, setTrendYear] = useState(""); // "" = all years
 
     const [dealerSearchInput, setDealerSearchInput] = useState("");
     const [dealerSearch, setDealerSearch] = useState("");
@@ -103,15 +106,40 @@ export default function PmDashboard() {
         }
     };
 
+    // Years available for the trend filter
+    const allMonths = filterOptions?.months ?? data?.availableMonths ?? [];
+    const years = Array.from(new Set(allMonths.map((m) => m.slice(0, 4)))).sort();
+
+    const handleYearChange = (y: string) => {
+        setTrendYear(y);
+        if (y) {
+            const inYear = allMonths.filter((m) => m.startsWith(y)).sort();
+            setWeeklyMonth(inYear[inYear.length - 1]); // jump to that year's latest month
+        } else {
+            setWeeklyMonth(undefined);
+        }
+    };
+
     const showContent = !!activeCompany && !isLoading && !isError && !!data;
     const selectedWeeklyMonth = weeklyMonth ?? data?.weeklyTrendMonth ?? "";
+    const weeklyMonthOptions = (data?.availableMonths ?? []).filter((m) => !trendYear || m.startsWith(trendYear));
 
     const trendPoints =
         data == null
             ? []
             : trendView === "monthly"
-                ? data.monthlyTrend.map((d) => ({ label: formatMonthShort(d.year_month), value: d.pm_count }))
-                : data.weeklyTrend.map((d) => ({ label: d.year_week, value: d.pm_count }));
+                ? data.monthlyTrend
+                    .filter((d) => !trendYear || d.year_month.startsWith(trendYear))
+                    .map((d) => ({
+                        label: formatMonthShort(d.year_month),
+                        done: d.done_count,
+                        dispute: d.dispute_count,
+                    }))
+                : data.weeklyTrend.map((d) => ({
+                    label: d.year_week,
+                    done: d.done_count,
+                    dispute: d.dispute_count,
+                }));
 
     return (
         <div className="flex flex-col gap-4 px-6 pb-6">
@@ -196,11 +224,22 @@ export default function PmDashboard() {
                             title="PMs over time"
                             subtitle={
                                 trendView === "monthly"
-                                    ? "New PMs per month"
-                                    : `New PMs per week — ${formatMonthFull(selectedWeeklyMonth)}`
+                                    ? `PMs done vs dispute, per month — ${trendYear || "all years"}`
+                                    : `PMs done vs dispute, per week — ${formatMonthFull(selectedWeeklyMonth)}`
                             }
                             actions={
                                 <>
+                                    <Select
+                                        className="w-28"
+                                        aria-label="Year"
+                                        value={trendYear}
+                                        onChange={(e) => handleYearChange(e.target.value)}
+                                    >
+                                        <option value="">All years</option>
+                                        {years.map((y) => (
+                                            <option key={y} value={y}>{y}</option>
+                                        ))}
+                                    </Select>
                                     {trendView === "weekly" && (
                                         <Select
                                             className="w-32"
@@ -208,7 +247,7 @@ export default function PmDashboard() {
                                             value={selectedWeeklyMonth}
                                             onChange={(e) => setWeeklyMonth(e.target.value || undefined)}
                                         >
-                                            {data.availableMonths.map((m) => (
+                                            {weeklyMonthOptions.map((m) => (
                                                 <option key={m} value={m}>{formatMonthShort(m)}</option>
                                             ))}
                                         </Select>
@@ -225,7 +264,17 @@ export default function PmDashboard() {
                                 </>
                             }
                         >
-                            <PmTrendChart data={trendPoints} seriesName={trendView === "monthly" ? "PMs this month" : "PMs this week"} />
+                            {/* Legend lives in the body so the header never changes size between views.
+                                Delete this block if your PmTrendChart already draws its own legend. */}
+                            <div className="mb-1 flex justify-end">
+                                <Legend
+                                    items={[
+                                        { label: "PM done", color: COLORS.green },
+                                        { label: "Dispute", color: COLORS.red },
+                                    ]}
+                                />
+                            </div>
+                            <PmTrendChart data={trendPoints} />
                         </Card>
 
                         {!state && data.regionBreakdown.length > 0 && (

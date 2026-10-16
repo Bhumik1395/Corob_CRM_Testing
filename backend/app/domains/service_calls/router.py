@@ -13,6 +13,7 @@ def dashboard_focus(
     machine: str = None,
     status: str = None,
     service_type: str = None,
+    year: str = None,
     page: int = 1,
     page_size: int = 50,
 ):
@@ -25,4 +26,4 @@ def dashboard_focus(
     except KeyError:
         raise HTTPException(401, {"error": "session_expired"})
 
-    return compute_focus(df, customer, state, machine, status, service_type, page, page_size)
+    return compute_focus(df, customer, state, machine, status, service_type, year, page, page_size)

@@ -2,17 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.auth import CurrentUser, require_roles
-from app.domains.pm.common import load_pm_df
 from app.domains.pm.outcome import next_question, count_matches, DONE, DISPUTE
 from app.domains.pm.rules_store import (get_learned_rules, save_rule, list_history, set_label, set_active)
+from app.domains.pm.cache import load_pm_df
 
 router = APIRouter()
-employee_only = require_roles("corob_employee")      # customers can never see or answer the quiz
+employee_only = require_roles("corob_employee")
 
 
 class Answer(BaseModel):
     phrase: str
-    label: str                                       # "PM Done" or "Dispute"
+    label: str
 
 
 class NewLabel(BaseModel):
@@ -56,7 +56,7 @@ def review_history(company: str | None = None, scope: str = "mine", user: Curren
     return {"rules": rules}
 
 
-# NOTE: CORS only allows GET/POST/DELETE, so "change" is a POST rather than PATCH.
+
 @router.post("/api/pm/review/rules/{rule_id}/label")
 def review_change(rule_id: int, body: NewLabel, user: CurrentUser = Depends(employee_only)):
     _check_label(body.label)

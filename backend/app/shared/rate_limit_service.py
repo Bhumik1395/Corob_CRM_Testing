@@ -26,8 +26,8 @@ DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
 
 def _client_ip(request: Request) -> str:
-    # Behind our Nginx, X-Real-IP is set to the true socket address and cannot
-    # be spoofed by the client (X-Forwarded-For can — clients may prepend to it).
+
+
     real = request.headers.get("x-real-ip")
     if real:
         return real.strip()
@@ -52,7 +52,7 @@ def get_or_set_device_id(request: Request, response: Response) -> str:
     return device_id
 
 
-# --- shared helpers ------------------------------------------------------------
+
 def _is_locked(key: str) -> int:
     """Seconds remaining on the lock for this key, or 0."""
     with get_connection() as conn:
@@ -97,7 +97,7 @@ def _clear(key: str) -> None:
             cur.execute("DELETE FROM login_attempts WHERE device_ip_key = %s", (key,))
 
 
-# --- per device + IP -----------------------------------------------------------
+
 def _device_key(device_id: str, ip: str) -> str:
     return f"{device_id}:{ip}"
 
@@ -123,7 +123,7 @@ def clear_attempts(device_id: str, ip: str) -> None:
     _clear(_device_key(device_id, ip))
 
 
-# --- per account ---------------------------------------------------------------
+
 def _account_key(email: str) -> str:
     return f"email:{email.strip().lower()}"
 

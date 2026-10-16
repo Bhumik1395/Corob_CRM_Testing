@@ -88,6 +88,11 @@ export interface PmUploadResponse {
     companies: { company: string; total_rows_stored: number }[];
 }
 
+export interface PmPrintOptions {
+    periods: string[];
+    models: string[];
+}
+
 function authHeaders(token: string): HeadersInit {
     return { Authorization: `Bearer ${token}` };
 }
@@ -231,4 +236,35 @@ export async function removeReviewRule(token: string, id: number) {
 export async function restoreReviewRule(token: string, id: number) {
     const res = await fetch(`${API_BASE}/api/pm/review/rules/${id}/restore`, { method: "POST", headers: authHeaders(token) });
     return handle<{ restored: boolean }>(res);
+}
+
+export async function getPrintOptions(token: string, company?: string): Promise<PmPrintOptions> {
+    const params = new URLSearchParams();
+    if (company) params.set("company", company);
+    const res = await fetch(`${API_BASE}/api/pm/print/options?${params}`, { headers: authHeaders(token) });
+    return handle<PmPrintOptions>(res);
+}
+
+export async function downloadPmReport(
+    token: string,
+    opts: { company?: string; model?: string; year: number; month: number }
+): Promise<void> {
+    const params = new URLSearchParams({ year: String(opts.year), month: String(opts.month) });
+    if (opts.company) params.set("company", opts.company);
+    if (opts.model) params.set("model", opts.model);
+
+    const res = await fetch(`${API_BASE}/api/pm/print/pdf?${params}`, { headers: authHeaders(token) });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw body?.detail ?? body ?? { message: "Could not generate the PDF." };
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `PM Report ${opts.year}-${String(opts.month).padStart(2, "0")}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
 }

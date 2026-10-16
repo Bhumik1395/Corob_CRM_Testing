@@ -3,14 +3,18 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
+
 from app.core.db import get_connection
-from app.api import me, companies, combined_upload, login
 from app.core.security_middleware import CsrfOriginCheckMiddleware, SecurityHeadersMiddleware
-from app.domains.pm import upload_router as pm_upload_router
-from app.domains.pm import dashboard_router as pm_dashboard_router
+from app.api import me, companies, combined_upload, login, engineer
+from app.domains.pm import (
+    upload_router as pm_upload_router,
+    dashboard_router as pm_dashboard_router,
+    review_router as pm_review_router,
+    print_router as pm_print_router
+)
 from app.domains.service_calls import (
     router as service_calls_router,
-    quarterly_router,
     employees_router,
     utilization_router,
     filters_router,
@@ -20,10 +24,6 @@ from app.domains.service_calls import (
 
 ALLOWED_ORIGIN = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
 
-# Hostnames this API will answer for (the Host header it sees). Behind our
-# Nginx that is the public domain; on a platform like Render it is the
-# platform's own hostname. List any extras in ALLOWED_HOSTS (comma separated),
-# or set ALLOWED_HOSTS=* to allow any host.
 _origin_host = ALLOWED_ORIGIN.split("://", 1)[-1].split("/", 1)[0].split(":")[0]
 _extra_hosts = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
@@ -49,7 +49,6 @@ app.add_middleware(
 
 app.include_router(login.router)
 app.include_router(service_calls_router.router)
-app.include_router(quarterly_router.router)
 app.include_router(employees_router.router)
 app.include_router(utilization_router.router)
 app.include_router(filters_router.router)
@@ -57,9 +56,12 @@ app.include_router(reports_router.router)
 app.include_router(session_router.router)
 app.include_router(pm_upload_router.router)
 app.include_router(pm_dashboard_router.router)
+app.include_router(pm_review_router.router)
+app.include_router(engineer.router)
 app.include_router(me.router)
 app.include_router(combined_upload.router)
 app.include_router(companies.router)
+app.include_router(pm_print_router.router)
 
 @app.get("/health")
 def health():

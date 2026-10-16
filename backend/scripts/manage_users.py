@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """User administration for Corob Service Analytics. Run ON THE SERVER.
 
     cd backend
@@ -29,12 +29,12 @@ from pathlib import Path
 import bcrypt
 import pymysql
 
-# make `app` importable when run as `python scripts/manage_users.py`
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from app.core.db import get_connection  # noqa: E402
+from app.core.db import get_connection
 
 MIN_PASSWORD_LEN = 10
-MAX_PASSWORD_BYTES = 72  # bcrypt ignores everything past 72 bytes
+MAX_PASSWORD_BYTES = 72
 ROLES = ("customer", "corob_employee")
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -71,7 +71,7 @@ def find_user(cur, email: str):
     return cur.fetchone()
 
 
-# ---------------------------------------------------------------- commands
+
 def cmd_add(a):
     email = norm_email(a.email)
     company_id = None

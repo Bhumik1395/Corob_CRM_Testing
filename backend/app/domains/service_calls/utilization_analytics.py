@@ -25,8 +25,6 @@ def compute_utilization(
         d = d[d["customer"] == customer]
     d = d.dropna(subset=["call_date"])
 
-    # Every month present for this customer, before the year/month filter, so the
-    # pickers keep showing all options after one is chosen.
     periods = sorted(d["call_date"].dt.strftime("%Y-%m").unique().tolist())
 
     if year:
@@ -79,7 +77,6 @@ def compute_utilization(
         under_norm_counts[["eng_code", "under_norm_pct"]], on="eng_code", how="left"
     )
 
-    # Supervisor comes only from the "Call Forwarded to" column in the uploaded data.
     supervisor_by_eng = d.groupby("eng_code")["supervisor"].agg(lambda s: _most_common(s, UNASSIGNED))
     eng_summary["supervisor"] = eng_summary["eng_code"].map(supervisor_by_eng).fillna(UNASSIGNED)
 
@@ -121,9 +118,3 @@ def compute_utilization(
         "engineers": engineers,
         "supervisors": supervisors,
     }
-# In frontend:
-# You can show a "Total Working Days" card.
-# The `totalWorkingDays` field is computed as `distinctMonths * 26`.
-# So if `distinctMonths` is 0 (no data), `totalWorkingDays` will be 0.
-# The frontend can simply multiply the selected number of months by 26, 
-# or you can pass `distinctMonths` from the backend and compute it in the frontend.

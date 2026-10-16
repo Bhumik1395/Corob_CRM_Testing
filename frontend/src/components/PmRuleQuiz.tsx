@@ -16,7 +16,7 @@ export function PmRuleQuiz({ token, company }: { token: string; company: string 
         onSuccess: () => {
             qc.invalidateQueries({ queryKey: ["pmReviewNext"] });
             qc.invalidateQueries({ queryKey: ["pmReviewHistory"] });
-            qc.invalidateQueries({ queryKey: ["pmDashboard"] });   // KPIs update immediately
+            qc.invalidateQueries({ queryKey: ["pmDashboard"] });
         },
     });
 

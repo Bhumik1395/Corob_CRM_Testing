@@ -4,8 +4,8 @@ import pandas as pd
 from app.core.auth import CurrentUser, require_roles
 from app.domains.pm.validation import validate_pm_excel, ValidationError
 from app.domains.pm.excel_service import process_pm_dataframe
-from app.domains.pm.cache import save_pm_data, delete_pm_data
-from app.domains.pm.common import resolve_company
+from app.domains.pm.cache import save_pm_data, delete_pm_data, delete_all_pm_data
+from app.domains.pm.common import resolve_company, ALL_COMPANIES
 
 router = APIRouter()
 MAX_FILES = 10
@@ -72,8 +72,12 @@ def end_pm_session(
     company: str | None = None,
     user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
 ):
-    """Permanently deletes all stored PM data for a company. Customers can
-    only ever target their own company, regardless of the query string."""
+    """Deletes stored PM data. Customers can only ever target their own company.
+    Corob employees may pass ?company=__all__ to wipe every company."""
+    if user.is_corob_employee and company == ALL_COMPANIES:
+        count = delete_all_pm_data()
+        return {"company": ALL_COMPANIES, "deleted": count > 0}
+
     resolved_company = resolve_company(user, company)
     had_data = delete_pm_data(resolved_company)
     return {"company": resolved_company, "deleted": had_data}

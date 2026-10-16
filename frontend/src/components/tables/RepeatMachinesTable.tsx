@@ -6,10 +6,6 @@ import { Pagination } from "../ui/Pagination";
 const th = "px-4 py-2.5 text-left text-xs font-medium text-muted";
 const td = "px-4 py-2.5 align-top";
 
-/**
- * Renders without its own card shell: drop it inside <Card bodyClassName="p-0">.
- * The table body scrolls internally so the page itself stays short.
- */
 export function RepeatMachinesTable({
     rows,
     page,
@@ -75,10 +71,11 @@ export function RepeatMachinesTable({
                                         <tr>
                                             <td colSpan={3} className="bg-[#F6F8F7] p-0">
                                                 <div className="overflow-x-auto">
-                                                    <table className="w-full min-w-[720px] text-sm">
+                                                    <table className="w-full min-w-[860px] text-sm">
                                                         <thead>
                                                             <tr className="text-muted">
                                                                 <th className={`${th} pl-12`}>Date</th>
+                                                                <th className={th}>Engineer</th>
                                                                 <th className={th}>Customer</th>
                                                                 <th className={th}>Dealer</th>
                                                                 <th className={th}>Location</th>
@@ -91,6 +88,10 @@ export function RepeatMachinesTable({
                                                             {row.calls.map((c, i) => (
                                                                 <tr key={i} className="border-t border-border">
                                                                     <td className={`${td} whitespace-nowrap pl-12`}>{c.call_date}</td>
+                                                                    <td className={`${td} whitespace-nowrap`}>
+                                                                        <div className="font-medium">{c.employee_name || "—"}</div>
+                                                                        <div className="text-xs text-muted">{c.eng_code}</div>
+                                                                    </td>
                                                                     <td className={td}>{c.customer}</td>
                                                                     <td className={td}>
                                                                         <div>{c.dealer_name}</div>

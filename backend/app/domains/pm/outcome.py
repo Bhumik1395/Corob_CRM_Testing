@@ -34,7 +34,7 @@ def label_text(text, learned):
 def apply_outcomes(df, learned):
     """Adds pm_outcome / pm_resolved and makes is_closed mean 'PM Done' so the existing dashboard maths still works."""
     if "remarks" not in df.columns:
-        return df                                   # no remarks column: keep the old Call Status logic
+        return df
     df = df.copy()
     uniq = {x: label_text(x, learned) for x in df["remarks"].fillna("").astype(str).unique()}
     res = df["remarks"].fillna("").astype(str).map(uniq)
@@ -61,7 +61,7 @@ def next_question(df, learned, skip=(), min_rows=5, max_words=4):
         for size in range(2, max_words + 1):
             for i in range(len(toks) - size + 1):
                 g = toks[i:i + size]
-                if any(len(w) < 2 for w in g): continue          # skip fragments like 'm c', 'g data'
+                if any(len(w) < 2 for w in g): continue
                 if all(w in FILLER for w in g): continue
                 if g[0] in FILLER or g[-1] in FILLER: continue
                 seen.add(" ".join(g))

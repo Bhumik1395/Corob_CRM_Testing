@@ -1,5 +1,7 @@
 import pandas as pd
 
+from app.shared.employee_mapping_service import load_employee_mapping
+
 
 def _build_breakdown(grouped: pd.DataFrame, filtered: pd.DataFrame, group_col: str) -> pd.DataFrame:
     grouped["over_norm_calls"] = grouped["total_calls"] - grouped["under_norm_calls"]
@@ -15,7 +17,7 @@ def _build_breakdown(grouped: pd.DataFrame, filtered: pd.DataFrame, group_col: s
 
 def compute_focus(
     df: pd.DataFrame,
-    customer=None, state=None, machine=None, status=None, service_type=None,
+    customer=None, state=None, machine=None, status=None, service_type=None, year=None,
     page: int = 1, page_size: int = 50,
 ) -> dict:
     filtered = df
@@ -23,6 +25,11 @@ def compute_focus(
     if state: filtered = filtered[filtered["state"] == state]
     if machine: filtered = filtered[filtered["machine_no"] == machine]
     if status: filtered = filtered[filtered["status"] == status]
+    if year:
+        try:
+            filtered = filtered[filtered["call_date"].dt.year == int(year)]
+        except ValueError:
+            pass
 
     if "service_type" in filtered.columns:
         filtered = filtered[filtered["service_type"] != "Gdata"]
@@ -133,10 +140,13 @@ def compute_focus(
     page_machine_ids = repeat_machine_counts.iloc[start:start + page_size]
 
     detail_cols = [
-        "call_date", "customer", "state", "status", "visit_type", "service_type", "employee_name",
+        "call_date", "customer", "state", "status", "visit_type", "service_type",
+        "employee_name", "eng_code",
         "dealer_code", "dealer_name", "city", "remarks",
     ]
     available_detail_cols = [c for c in detail_cols if c in filtered.columns]
+
+    name_mapping = load_employee_mapping()
 
     repeat_machines_rows = []
     for machine_no, count in page_machine_ids.items():
@@ -146,6 +156,10 @@ def compute_focus(
             .sort_values("call_date")
             .copy()
         )
+        if "eng_code" in machine_calls.columns and "employee_name" in machine_calls.columns:
+            machine_calls["employee_name"] = (
+                machine_calls["eng_code"].map(name_mapping).fillna(machine_calls["employee_name"])
+            )
         machine_calls["call_date"] = machine_calls["call_date"].dt.strftime("%Y-%m-%d")
         repeat_machines_rows.append({
             "machine_no": machine_no,

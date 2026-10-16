@@ -31,6 +31,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        # HSTS only makes sense once you're actually serving over HTTPS (see nginx.conf note).
+
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
         return response

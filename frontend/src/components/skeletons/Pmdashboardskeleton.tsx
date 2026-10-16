@@ -1,6 +1,6 @@
 import { SkeletonCard, SkeletonPanel } from "../Skeleton";
 
-/** Content-only skeleton: the filter row above it is real and stays interactive. */
+
 export function PmDashboardSkeleton() {
     return (
         <div className="flex flex-col gap-4">

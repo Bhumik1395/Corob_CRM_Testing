@@ -1,7 +1,9 @@
+import logging
+
+import pymysql
 from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
-import logging
-import pymysql
+
 from app.core.auth import authenticate
 from app.shared.rate_limit_service import (
     enforce_not_locked_out,
@@ -15,33 +17,13 @@ from app.shared.rate_limit_service import (
 )
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 
 class LoginRequest(BaseModel):
     email: str
     password: str
 
-
-@router.post("/api/auth/login")
-def login(body: LoginRequest, request: Request, response: Response):
-    device_id = get_or_set_device_id(request, response)
-    ip = _client_ip(request)
-
-    enforce_not_locked_out(device_id, ip)
-    enforce_account_not_locked(body.email)
-
-    try:
-        token = authenticate(body.email, body.password)
-    except HTTPException:
-        record_failed_attempt(device_id, ip)
-        record_account_failure(body.email)
-        raise
-
-    clear_attempts(device_id, ip)
-    clear_account_failures(body.email)
-    return {"access_token": token}
-
-log = logging.getLogger(__name__)
 
 @router.post("/api/auth/login")
 def login(body: LoginRequest, request: Request, response: Response):

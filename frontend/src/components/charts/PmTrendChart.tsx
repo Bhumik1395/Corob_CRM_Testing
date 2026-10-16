@@ -3,18 +3,11 @@ import { COLORS, TOOLTIP } from "../../lib/palette";
 
 export interface TrendPoint {
     label: string;
-    value: number;
+    done: number;
+    dispute: number;
 }
 
-export function PmTrendChart({
-    data,
-    seriesName = "PMs",
-    height = 250,
-}: {
-    data: TrendPoint[];
-    seriesName?: string;
-    height?: number;
-}) {
+export function PmTrendChart({ data, height = 250 }: { data: TrendPoint[]; height?: number }) {
     const option = {
         grid: { left: 44, right: 8, top: 16, bottom: 28 },
         tooltip: {
@@ -36,25 +29,48 @@ export function PmTrendChart({
         xAxis: {
             type: "category",
             data: data.map((d) => d.label),
-            // Keep period labels at the bottom of the chart, not on the zero line.
+
             axisLine: { onZero: false, show: false },
             axisTick: { show: false },
             axisLabel: { color: COLORS.muted, fontSize: 11, margin: 10, rotate: data.length > 10 ? 45 : 0 },
         },
         yAxis: {
             type: "value",
-            axisLabel: { color: COLORS.muted, fontSize: 11, formatter: (v: number) => v.toLocaleString() },
+            axisLabel: { color: COLORS.muted, fontSize: 11, formatter: (v: number) => Math.abs(v).toLocaleString() },
             splitLine: { lineStyle: { color: COLORS.grid, type: "dashed" } },
         },
+
+        barGap: "-100%",
         series: [
             {
-                name: seriesName,
+                name: "PM done",
                 type: "bar",
-                data: data.map((d) => d.value),
+                data: data.map((d) => d.done),
                 barMaxWidth: 30,
                 itemStyle: { color: COLORS.green, borderRadius: [8, 8, 0, 0] },
                 emphasis: { itemStyle: { color: COLORS.lime } },
                 label: { show: true, position: "top", fontSize: 10, color: COLORS.muted },
+                markLine: {
+                    silent: true,
+                    symbol: "none",
+                    label: { show: false },
+                    lineStyle: { color: "#C9D1CD", width: 1, type: "solid" },
+                    data: [{ yAxis: 0 }],
+                },
+            },
+            {
+                name: "Dispute",
+                type: "bar",
+                data: data.map((d) => -d.dispute),
+                barMaxWidth: 30,
+                itemStyle: { color: COLORS.red, borderRadius: [0, 0, 8, 8] },
+                label: {
+                    show: true,
+                    position: "bottom",
+                    fontSize: 10,
+                    color: COLORS.muted,
+                    formatter: (p: any) => Math.abs(p.value),
+                },
             },
         ],
     };

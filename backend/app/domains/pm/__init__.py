@@ -1,3 +1,3 @@
-from app.domains.pm import upload as upload_router, dashboard as dashboard_router, review as review_router
+from app.domains.pm import upload as upload_router, dashboard as dashboard_router, review as review_router, print_report as print_router
 
-__all__ = ["upload_router", "dashboard_router", "review_router"]
+__all__ = ["upload_router", "dashboard_router", "review_router", "print_router"]

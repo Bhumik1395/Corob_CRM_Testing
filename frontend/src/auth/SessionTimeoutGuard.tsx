@@ -26,9 +26,10 @@ export default function SessionTimeoutGuard() {
     };
 
     const signOutForInactivity = async () => {
-        if (rolesRef.current.includes("customer") && tokenRef.current) {
+        if (tokenRef.current) {
             try {
-                await deleteAllPmData(tokenRef.current);
+                const isEmployee = rolesRef.current.includes("corob_employee");
+                await deleteAllPmData(tokenRef.current, isEmployee ? "__all__" : undefined);
             } catch {
             }
         }

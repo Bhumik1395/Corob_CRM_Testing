@@ -15,6 +15,7 @@ import Unauthorized from "./pages/Unauthorized";
 import CustomerDashboardShell from "./components/layout/CustomerDashboardShell";
 import PmDashboard from "./pages/customer/PmDashboard";
 import PmUploadPage from "./pages/customer/PmUploadPage";
+import PmPrintPage from "./pages/customer/PmPrintPage";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ export default function App() {
                         <Route path="pm" element={<PmDashboard />} />
                         <Route path="utilization" element={<EngineerUtilization />} />
                         <Route path="upload" element={<UploadPage />} />
+                        <Route path="pm/print" element={<PmPrintPage />} />
                     </Route>
 
                     <Route
@@ -54,6 +56,7 @@ export default function App() {
                         <Route index element={<Navigate to="pm" replace />} />
                         <Route path="pm" element={<PmDashboard />} />
                         <Route path="pm/upload" element={<PmUploadPage />} />
+                        <Route path="pm/print" element={<PmPrintPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/login" replace />} />

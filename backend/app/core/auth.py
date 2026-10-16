@@ -15,9 +15,9 @@ from app.core.db import get_connection
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
-JWT_SECRET = os.environ["JWT_SECRET"]  
+JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
-JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", str(60 * 10)))  
+JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", str(60 * 10)))
 
 @dataclass
 class CurrentUser:
@@ -48,10 +48,10 @@ def _issue_token(user_row: dict) -> str:
     return jwt.encode(claims, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
 
-# A real bcrypt hash of a random value, used only so that authenticate() spends
-# the same amount of CPU time whether or not the email exists — otherwise an
-# attacker can enumerate valid accounts purely by measuring response latency
-# (row-found-then-checkpw is slow; row-not-found-and-return-early is fast).
+
+
+
+
 _DUMMY_HASH = bcrypt.hashpw(b"not-a-real-password-just-for-timing", bcrypt.gensalt()).decode("utf-8")
 
 

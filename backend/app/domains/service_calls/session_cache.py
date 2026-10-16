@@ -3,12 +3,15 @@ import uuid
 from datetime import datetime, timedelta
 
 import pandas as pd
+import pymysql
 
 from app.core.config import SESSION_TTL_SECONDS
 from app.core.db import get_connection
 
+REFRESH_AFTER_SECONDS = 300  # only extend the TTL if it was last extended 5+ min ago
 
-def create_session(df: pd.DataFrame) -> str:
+
+def create_session(df: pd.DataFrame, old_session_id: str | None = None) -> str:
     session_id = str(uuid.uuid4())
     buf = io.BytesIO()
     df.to_pickle(buf, compression="gzip")
@@ -16,6 +19,9 @@ def create_session(df: pd.DataFrame) -> str:
 
     with get_connection() as conn:
         with conn.cursor() as cur:
+            cur.execute("DELETE FROM service_call_sessions WHERE expires_at < UTC_TIMESTAMP()")
+            if old_session_id:
+                cur.execute("DELETE FROM service_call_sessions WHERE session_id = %s", (old_session_id,))
             cur.execute(
                 "INSERT INTO service_call_sessions (session_id, payload, expires_at) VALUES (%s, %s, %s)",
                 (session_id, buf.getvalue(), expires_at),
@@ -27,19 +33,24 @@ def get_session_data(session_id: str) -> pd.DataFrame:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT payload FROM service_call_sessions WHERE session_id = %s AND expires_at > UTC_TIMESTAMP()",
+                "SELECT payload, expires_at FROM service_call_sessions "
+                "WHERE session_id = %s AND expires_at > UTC_TIMESTAMP()",
                 (session_id,),
             )
             row = cur.fetchone()
             if row is None:
                 raise KeyError("session_expired")
 
-            # reads refresh the TTL, matching the old Redis behaviour
-            new_expiry = datetime.utcnow() + timedelta(seconds=SESSION_TTL_SECONDS)
-            cur.execute(
-                "UPDATE service_call_sessions SET expires_at = %s WHERE session_id = %s",
-                (new_expiry, session_id),
-            )
+            # Sliding TTL, but only write occasionally and never fail the request over it
+            remaining = (row["expires_at"] - datetime.utcnow()).total_seconds()
+            if remaining < SESSION_TTL_SECONDS - REFRESH_AFTER_SECONDS:
+                try:
+                    cur.execute(
+                        "UPDATE service_call_sessions SET expires_at = %s WHERE session_id = %s",
+                        (datetime.utcnow() + timedelta(seconds=SESSION_TTL_SECONDS), session_id),
+                    )
+                except pymysql.err.OperationalError:
+                    pass
 
     return pd.read_pickle(io.BytesIO(row["payload"]), compression="gzip")
 

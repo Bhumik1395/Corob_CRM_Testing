@@ -21,7 +21,7 @@ export function PmRuleHistory({ token, company }: { token: string; company: stri
         setConfirming(null);
         qc.invalidateQueries({ queryKey: ["pmReviewHistory"] });
         qc.invalidateQueries({ queryKey: ["pmReviewNext"] });
-        qc.invalidateQueries({ queryKey: ["pmDashboard"] });       // KPIs follow the new answer
+        qc.invalidateQueries({ queryKey: ["pmDashboard"] });
     };
     const change = useMutation({ mutationFn: (v: { id: number; label: Label }) => changeReviewLabel(token, v.id, v.label), onSuccess: refresh });
     const remove = useMutation({ mutationFn: (id: number) => removeReviewRule(token, id), onSuccess: refresh });

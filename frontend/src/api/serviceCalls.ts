@@ -37,6 +37,7 @@ export interface RepeatMachineCall {
     visit_type: string;
     service_type: string;
     employee_name: string;
+    eng_code: string;
     dealer_code: string;
     dealer_name: string;
     city: string;
@@ -78,6 +79,7 @@ export interface FilterOptions {
     machines: string[];
     statuses: string[];
     serviceTypes: string[];
+    years: string[];
 }
 
 export interface EmployeeRow {
@@ -118,6 +120,7 @@ export interface SupervisorRow {
 export interface UtilizationResponse {
     distinctMonths: number;
     totalWorkingDays: number;
+    periods: string[];
     engineers: EngineerUtilizationRow[];
     supervisors: SupervisorRow[];
 }
@@ -145,7 +148,7 @@ export function uploadCombined(
         files.forEach((f) => form.append("files", f));
 
         xhr.open("POST", `${API_BASE}/api/upload/combined`);
-        xhr.withCredentials = true; // still needed so the Service Calls session cookie gets stored
+        xhr.withCredentials = true;
         xhr.setRequestHeader("Authorization", `Bearer ${token}`);
 
         xhr.upload.onprogress = (event) => {
@@ -211,9 +214,15 @@ export async function getEmployeeDashboard(
     return res.json();
 }
 
-export async function getUtilizationDashboard(customer?: string): Promise<UtilizationResponse> {
+export async function getUtilizationDashboard(
+    customer?: string,
+    year?: number,
+    month?: number
+): Promise<UtilizationResponse> {
     const params = new URLSearchParams();
     if (customer) params.set("customer", customer);
+    if (year) params.set("year", String(year));
+    if (month) params.set("month", String(month));
 
     const res = await fetch(`${API_BASE}/api/dashboard/utilization?${params}`, {
         credentials: "include",

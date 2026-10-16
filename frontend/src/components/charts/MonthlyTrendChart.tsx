@@ -3,11 +3,11 @@ import type { MonthlyTrendRow } from "../../api/serviceCalls";
 import { formatMonthShort } from "../../lib/format";
 import { COLORS, TOOLTIP } from "../../lib/palette";
 
-/**
- * Total calls rise above the zero line (green); repeat calls hang below it (red).
- * Repeat values are stored negative so ECharts draws them downward, and every
- * label/tooltip/axis tick shows the absolute value.
- */
+
+
+
+
+
 export function MonthlyTrendChart({ data, height = 230 }: { data: MonthlyTrendRow[]; height?: number }) {
     const months = data.map((d) => formatMonthShort(d.year_month));
 
@@ -32,7 +32,7 @@ export function MonthlyTrendChart({ data, height = 230 }: { data: MonthlyTrendRo
         xAxis: {
             type: "category",
             data: months,
-            // Keep month labels at the bottom of the chart, not on the zero line.
+
             axisLine: { onZero: false, show: false },
             axisTick: { show: false },
             axisLabel: { color: COLORS.muted, fontSize: 11, margin: 10 },
@@ -42,7 +42,7 @@ export function MonthlyTrendChart({ data, height = 230 }: { data: MonthlyTrendRo
             axisLabel: { color: COLORS.muted, fontSize: 11, formatter: (v: number) => Math.abs(v).toLocaleString() },
             splitLine: { lineStyle: { color: COLORS.grid, type: "dashed" } },
         },
-        // Both series occupy the same slot so the bar pair reads as one column.
+
         barGap: "-100%",
         series: [
             {
