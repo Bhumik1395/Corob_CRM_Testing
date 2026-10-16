@@ -4,80 +4,166 @@
 <head>
     <meta charset="utf-8">
     <style>
+        /* ---------- Page setup ---------- */
         @page {
             size: A4;
-            margin: 1.5cm 1.5cm 2cm 1.5cm;
+            margin: 2.4cm 1.6cm 2.2cm 1.6cm;
 
-            @bottom-center {
-                content: counter(page);
-                font-size: 9px;
+            @top-left {
+                content: "Preventive Maintenance Report";
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                color: #164A38;
+                font-weight: bold;
+                border-bottom: 0.6pt solid #164A38;
+                padding-bottom: 4px;
+                vertical-align: bottom;
+            }
+
+            @top-right {
+                content: string(company);
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
                 color: #666;
+                border-bottom: 0.6pt solid #164A38;
+                padding-bottom: 4px;
+                vertical-align: bottom;
+            }
+
+            @bottom-left {
+                content: string(model);
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                color: #666;
+                border-top: 0.6pt solid #cfd6d2;
+                padding-top: 4px;
+                vertical-align: top;
+            }
+
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                color: #666;
+                border-top: 0.6pt solid #cfd6d2;
+                padding-top: 4px;
+                vertical-align: top;
             }
         }
 
+        /* Cover page: no header/footer, framed with a double border */
+        @page cover {
+            margin: 1.4cm;
+            border: 3pt double #164A38;
+
+            @top-left {
+                content: none;
+                border: none;
+            }
+
+            @top-right {
+                content: none;
+                border: none;
+            }
+
+            @bottom-left {
+                content: none;
+                border: none;
+            }
+
+            @bottom-right {
+                content: none;
+                border: none;
+            }
+        }
+
+        /* ---------- Base ---------- */
         body {
             font-family: Helvetica, Arial, sans-serif;
             font-size: 11px;
             color: #1a1a1a;
+            margin: 0;
         }
 
+        /* Running strings for the page header/footer (kept invisible) */
+        .run-company {
+            string-set: company content();
+            font-size: 0;
+            height: 0;
+            overflow: hidden;
+        }
+
+        /* ---------- Cover ---------- */
         .cover {
-            height: 24cm;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            page: cover;
+            break-after: page;
             text-align: center;
+            padding: 0 1cm;
+        }
+
+        .cover .band {
+            background: #164A38;
+            color: #8DE41C;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            padding: 14px 0;
+            margin-top: 0;
         }
 
         .cover h1 {
-            font-size: 44px;
+            font-size: 42px;
             color: #164A38;
-            margin: 0 0 12px;
+            margin: 6cm 0 10px 0;
+            line-height: 1.15;
+        }
+
+        .cover .rule {
+            width: 90px;
+            height: 3px;
+            background: #8DE41C;
+            margin: 0 auto 18px auto;
         }
 
         .cover .period {
             font-size: 22px;
             color: #444;
+            margin-bottom: 36px;
         }
 
-        .cover .meta {
-            margin-top: 40px;
+        .cover table.meta {
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 11cm;
+        }
+
+        .cover table.meta td {
+            border: 1px solid #b8c4be;
+            padding: 8px 12px;
             font-size: 11px;
-            color: #888;
+            text-align: left;
         }
 
-        .index {
-            page-break-before: always;
+        .cover table.meta td.k {
+            background: #f1f3f2;
+            color: #555;
+            width: 32%;
+            font-weight: bold;
         }
 
-        h1.title {
-            font-size: 22px;
-            color: #164A38;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 6px;
-        }
-
-        a.idx {
-            display: block;
-            padding: 5px 0;
-            color: #164A38;
-            text-decoration: none;
-            font-size: 12px;
-        }
-
-        a.idx::after {
-            content: leader('.') target-counter(attr(href), page);
-        }
-
-        .model {
-            page-break-before: always;
+        /* ---------- Section headings ---------- */
+        h1.title,
+        .model h2 {
+            font-size: 17px;
+            color: #ffffff;
+            background: #164A38;
+            margin: 0 0 12px 0;
+            padding: 9px 12px;
+            border-left: 6px solid #8DE41C;
         }
 
         .model h2 {
-            font-size: 18px;
-            color: #164A38;
-            margin: 0 0 4px;
+            string-set: model content();
             bookmark-level: 1;
             bookmark-label: content();
         }
@@ -85,101 +171,313 @@
         .sub {
             color: #666;
             font-size: 10px;
-            margin: 0 0 8px;
+            margin: 0 0 6px 0;
         }
 
-        .chart {
-            text-align: center;
-            margin: 8px 0 12px;
+        /* ---------- Index ---------- */
+        .index {
+            break-before: page;
         }
 
-        .chart img {
+        table.idx {
             width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #164A38;
         }
 
-        .stats {
-            margin-bottom: 8px;
+        table.idx th {
+            background: #164A38;
+            color: #fff;
             font-size: 10px;
+            padding: 7px 8px;
+            text-align: left;
+            border: 1px solid #164A38;
         }
 
-        .stats b.done {
+        table.idx td {
+            border: 1px solid #c9d1cd;
+            padding: 7px 8px;
+            font-size: 10.5px;
+        }
+
+        table.idx tbody tr:nth-child(even) {
+            background: #f6f8f7;
+        }
+
+        table.idx tfoot td {
+            background: #eaf8d3;
+            font-weight: bold;
+            border: 1px solid #164A38;
+        }
+
+        table.idx td.num,
+        table.idx th.num {
+            text-align: right;
+            width: 14%;
+        }
+
+        table.idx a {
+            color: #164A38;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        table.idx a.pg::after {
+            content: target-counter(attr(href), page);
+        }
+
+        /* ---------- Model sections ---------- */
+        .model {
+            break-before: page;
+        }
+
+        table.tiles {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 8px 0;
+            margin: 0 -8px 12px -8px;
+            width: calc(100% + 16px);
+        }
+
+        table.tiles td {
+            border: 1px solid #164A38;
+            border-top: 4px solid #164A38;
+            padding: 8px 10px;
+            width: 25%;
+            background: #fbfcfb;
+        }
+
+        table.tiles td.done {
+            border-top-color: #2FA84F;
+        }
+
+        table.tiles td.disp {
+            border-top-color: #D32337;
+        }
+
+        table.tiles td.rate {
+            border-top-color: #8DE41C;
+        }
+
+        .tile-label {
+            display: block;
+            font-size: 8px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tile-value {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        .tile-value.done {
             color: #2FA84F;
         }
 
-        .stats b.disp {
+        .tile-value.disp {
             color: #D32337;
         }
 
-        table {
+        .chart-box {
+            border: 1px solid #c9d1cd;
+            padding: 8px 10px 4px 10px;
+            margin-bottom: 14px;
+            break-inside: avoid;
+        }
+
+        .chart-box .cap {
+            font-size: 9px;
+            color: #164A38;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+
+        .chart-box img {
+            width: 100%;
+        }
+
+        .table-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #164A38;
+            margin: 0 0 5px 0;
+        }
+
+        /* ---------- Detail table ---------- */
+        table.detail {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
+            border: 1px solid #164A38;
         }
 
-        thead {
+        table.detail thead {
             display: table-header-group;
         }
 
-        tr {
-            page-break-inside: avoid;
+        table.detail tr {
+            break-inside: avoid;
         }
 
-        th,
-        td {
-            border: 1px solid #ccc;
-            padding: 3px 5px;
+        table.detail th {
+            background: #164A38;
+            color: #fff;
+            border: 1px solid #164A38;
+            padding: 5px 5px;
+            font-size: 8px;
             text-align: left;
+        }
+
+        table.detail td {
+            border: 1px solid #c9d1cd;
+            padding: 4px 5px;
             font-size: 8px;
             word-wrap: break-word;
+            vertical-align: top;
         }
 
-        th {
-            background: #f1f3f2;
+        table.detail td.st-done {
+            color: #2FA84F;
+            font-weight: bold;
         }
 
-        tbody tr:nth-child(even) {
-            background: #fafafa;
+        table.detail td.st-disp {
+            color: #D32337;
+            font-weight: bold;
+        }
+
+        table.detail tbody tr:nth-child(even) {
+            background: #f6f8f7;
+        }
+
+        .back {
+            display: inline-block;
+            margin-top: 10px;
+            font-size: 9px;
+            color: #164A38;
+            text-decoration: none;
         }
     </style>
 </head>
 
 <body>
 
+    <div class="run-company">{{ company }}</div>
+
+    <!-- ================= COVER ================= -->
     <section class="cover">
-        <h1>PM Report</h1>
+        <div class="band">Corob Service Analytics</div>
+        <h1>Preventive Maintenance<br>Report</h1>
+        <div class="rule"></div>
         <div class="period">{{ period }}</div>
-        <div class="meta">{{ company }} &middot; Generated {{ generated_at }}</div>
+
+        <table class="meta">
+            <tr>
+                <td class="k">Company</td>
+                <td>{{ company }}</td>
+            </tr>
+            <tr>
+                <td class="k">Period</td>
+                <td>{{ period }}</td>
+            </tr>
+            <tr>
+                <td class="k">Models covered</td>
+                <td>{{ sections|length }}</td>
+            </tr>
+            <tr>
+                <td class="k">Generated</td>
+                <td>{{ generated_at }}</td>
+            </tr>
+        </table>
     </section>
 
-    <section class="index">
-        <h1 class="title">Index</h1>
-        {% for s in sections %}
-        <a class="idx" href="#m{{ loop.index }}">{{ s.model }}</a>
-        {% endfor %}
+    <!-- ================= INDEX ================= -->
+    <section class="index" id="index">
+        <h1 class="title">Index &mdash; {{ period }}</h1>
+
+        <table class="idx">
+            <thead>
+                <tr>
+                    <th style="width:8%">#</th>
+                    <th>Model</th>
+                    <th class="num">Total</th>
+                    <th class="num">PM Done</th>
+                    <th class="num">Dispute</th>
+                    <th class="num">Page</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in sections %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><a href="#m{{ loop.index }}">{{ s.model }}</a></td>
+                    <td class="num">{{ s.month_total }}</td>
+                    <td class="num">{{ s.month_done }}</td>
+                    <td class="num">{{ s.month_dispute }}</td>
+                    <td class="num"><a class="pg" href="#m{{ loop.index }}"></a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td></td>
+                    <td>Total</td>
+                    <td class="num">{{ sections|sum(attribute='month_total') }}</td>
+                    <td class="num">{{ sections|sum(attribute='month_done') }}</td>
+                    <td class="num">{{ sections|sum(attribute='month_dispute') }}</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
     </section>
 
+    <!-- ================= MODEL SECTIONS ================= -->
     {% for s in sections %}
     <section class="model">
         <h2 id="m{{ loop.index }}">{{ s.model }}</h2>
-        <p class="sub">PM Done vs Dispute by month, {{ year }}</p>
-        <div class="chart"><img src="data:image/png;base64,{{ s.chart }}"></div>
 
-        <p class="stats">
-            {{ period }}: <b>{{ s.month_total }}</b> PMs &middot;
-            <b class="done">{{ s.month_done }}</b> done &middot;
-            <b class="disp">{{ s.month_dispute }}</b> dispute
-        </p>
+        <table class="tiles">
+            <tr>
+                <td>
+                    <span class="tile-label">Total PMs &middot; {{ period }}</span>
+                    <span class="tile-value">{{ s.month_total }}</span>
+                </td>
+                <td class="done">
+                    <span class="tile-label">PM Done</span>
+                    <span class="tile-value done">{{ s.month_done }}</span>
+                </td>
+                <td class="disp">
+                    <span class="tile-label">Dispute</span>
+                    <span class="tile-value disp">{{ s.month_dispute }}</span>
+                </td>
+                <td class="rate">
+                    <span class="tile-label">Completion rate</span>
+                    <span class="tile-value">{{ (s.month_done / s.month_total * 100)|round(1) }}%</span>
+                </td>
+            </tr>
+        </table>
 
-        <table>
+        <div class="chart-box">
+            <p class="cap">PM Done vs Dispute by month, {{ year }}</p>
+            <img src="data:image/png;base64,{{ s.chart }}">
+        </div>
+
+        <p class="table-title">PM records &mdash; {{ period }}</p>
+        <table class="detail">
             <colgroup>
-                <col style="width:11%">
-                <col style="width:9%">
-                <col style="width:19%">
-                <col style="width:13%">
-                <col style="width:9%">
-                <col style="width:14%">
+                <col style="width:10%">
+                <col style="width:8%">
+                <col style="width:17%">
                 <col style="width:12%">
+                <col style="width:9%">
                 <col style="width:13%">
+                <col style="width:10%">
+                <col style="width:11%">
+                <col style="width:10%">
             </colgroup>
             <thead>
                 <tr>
@@ -191,6 +489,7 @@
                     <th>Dealer address</th>
                     <th>Region</th>
                     <th>State</th>
+                    <th>PM status</th>
                 </tr>
             </thead>
             <tbody>
@@ -204,10 +503,13 @@
                     <td>{{ r.city }}</td>
                     <td>{{ r.region }}</td>
                     <td>{{ r.state }}</td>
+                    <td class="{{ 'st-done' if r.pm_status == 'PM Done' else 'st-disp' }}">{{ r.pm_status }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <a class="back" href="#index">&uarr; Back to index</a>
     </section>
     {% endfor %}
 

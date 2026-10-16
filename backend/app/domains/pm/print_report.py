@@ -88,9 +88,12 @@ def print_pdf(
             .sort_values("call_date")
             .reindex(columns=TABLE_COLS + ["is_closed"])
         )
-        month_done = int(rows_df["is_closed"].fillna(False).sum())
+        is_done = rows_df["is_closed"].fillna(False).astype(bool)
+        month_done = int(is_done.sum())
+
         rows_df = rows_df[TABLE_COLS].copy()
         rows_df["call_date"] = rows_df["call_date"].dt.strftime("%d-%m-%Y")
+        rows_df["pm_status"] = is_done.map({True: "PM Done", False: "Dispute"})
         rows = rows_df.fillna("").astype(str).to_dict("records")
 
         sections.append({

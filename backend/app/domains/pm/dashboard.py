@@ -18,7 +18,7 @@ def _frame_or_404(company: str):
             "error": "no_data",
             "message": f"No PM data uploaded yet for {where}.",
         })
-    return df
+    return apply_outcomes(df, get_learned_rules())
 
 
 @router.get("/api/pm/dashboard")
@@ -36,10 +36,16 @@ def pm_dashboard(
 ):
     resolved_company = resolve_company(user, company, allow_all=True)
     df = _frame_or_404(resolved_company)
-    df = apply_outcomes(df, get_learned_rules())
     return compute_pm_dashboard(
-        df, state=state, overall_month=overall_month, month=month, dealer_code=dealer_code,
-        detail_state=detail_state, detail_month=detail_month, page=page, page_size=page_size
+        df,
+        state=state,
+        overall_month=overall_month,
+        month=month,
+        dealer_code=dealer_code,
+        detail_state=detail_state,
+        detail_month=detail_month,
+        page=page,
+        page_size=page_size,
     )
 
 
