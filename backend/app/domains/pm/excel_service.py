@@ -17,7 +17,8 @@ def process_pm_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     for col in [
         "company", "customer_name", "state", "region", "call_status",
         "employee_name", "loc_up_rem", "supervisor", "dealer_code",
-        "dealer_name", "city", "remarks", "satisfaction_status", "feedback",
+        "dealer_name", "city", "call_closure_address", "remarks",
+        "satisfaction_status", "feedback",
     ]:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()

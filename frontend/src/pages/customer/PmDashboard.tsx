@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { ChevronDown, ChevronRight, FileText, FileX, Search } from "lucide-react";
-import { getPmDashboard, getPmFilterOptions, getCompanies, pmPdfUrl } from "../../api/pm";
+import { getPmDashboard, getPmFilterOptions, getCompanies, fetchTicketPdf } from "../../api/pm";
 import { useAuth } from "../../auth/AuthContext";
 import { PmTrendChart } from "../../components/charts/PmTrendChart";
 import { PdfViewerModal } from "../../components/PdfViewerModal";
@@ -10,12 +10,10 @@ import { PmRuleQuiz } from "../../components/PmRuleQuiz";
 import { PmRuleHistory } from "../../components/PmRuleHistory";
 import { Card } from "../../components/ui/Card";
 import { KpiCard } from "../../components/ui/KpiCard";
-import { Legend } from "../../components/ui/Legend";
 import { Pagination } from "../../components/ui/Pagination";
 import { Segmented } from "../../components/ui/Segmented";
 import { Select } from "../../components/ui/Select";
 import { formatMonthFull, formatMonthShort } from "../../lib/format";
-import { COLORS } from "../../lib/palette";
 
 const ALL = "__all__";
 
@@ -29,12 +27,12 @@ export default function PmDashboard() {
     const [state, setState] = useState("");
     const [page, setPage] = useState(1);
     const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set());
-    const [openPdf, setOpenPdf] = useState<{ url: string; title: string } | null>(null);
+    const [openPdf, setOpenPdf] = useState<{ url: string; title: string; filename: string } | null>(null);
     const [pdfMissingTicket, setPdfMissingTicket] = useState<string | null>(null);
+    const [pdfError, setPdfError] = useState<string | null>(null);
 
     const [trendView, setTrendView] = useState<TrendView>("monthly");
     const [weeklyMonth, setWeeklyMonth] = useState<string | undefined>(undefined);
-    const [trendYear, setTrendYear] = useState(""); // "" = all years
 
     const [dealerSearchInput, setDealerSearchInput] = useState("");
     const [dealerSearch, setDealerSearch] = useState("");
@@ -90,53 +88,41 @@ export default function PmDashboard() {
             return next;
         });
 
-    const handleOpenPdf = async (ticketNo: string) => {
+    // Generates the per-ticket PM report on the server and shows it in the modal.
+    // For "All companies" the row's own company is sent, because the backend needs a real company.
+    const handleOpenPdf = async (ticketNo: string, rowCompany?: string) => {
         setPdfMissingTicket(null);
-        const url = pmPdfUrl(ticketNo);
+        setPdfError(null);
         try {
-            const res = await fetch(url, { method: "HEAD" });
-            const contentType = res.headers.get("content-type") ?? "";
-            if (res.ok && contentType.includes("application/pdf")) {
-                setOpenPdf({ url, title: `PM Report — ${ticketNo}` });
-            } else {
-                setPdfMissingTicket(ticketNo);
-            }
-        } catch {
+            const url = await fetchTicketPdf(token!, ticketNo, rowCompany || activeCompany);
+            setOpenPdf({
+                url,
+                title: `PM Report — ${ticketNo}`,
+                // Slashes and other characters are not valid in file names.
+                filename: `${ticketNo.replace(/[\\/:*?"<>|]/g, "_")}.pdf`,
+            });
+        } catch (e: any) {
             setPdfMissingTicket(ticketNo);
-        }
-    };
-
-    // Years available for the trend filter
-    const allMonths = filterOptions?.months ?? data?.availableMonths ?? [];
-    const years = Array.from(new Set(allMonths.map((m) => m.slice(0, 4)))).sort();
-
-    const handleYearChange = (y: string) => {
-        setTrendYear(y);
-        if (y) {
-            const inYear = allMonths.filter((m) => m.startsWith(y)).sort();
-            setWeeklyMonth(inYear[inYear.length - 1]); // jump to that year's latest month
-        } else {
-            setWeeklyMonth(undefined);
+            setPdfError(typeof e === "string" ? e : e?.message ?? e?.error ?? "Unexpected server response.");
         }
     };
 
     const showContent = !!activeCompany && !isLoading && !isError && !!data;
     const selectedWeeklyMonth = weeklyMonth ?? data?.weeklyTrendMonth ?? "";
-    const weeklyMonthOptions = (data?.availableMonths ?? []).filter((m) => !trendYear || m.startsWith(trendYear));
 
     const trendPoints =
         data == null
             ? []
             : trendView === "monthly"
-                ? data.monthlyTrend
-                    .filter((d) => !trendYear || d.year_month.startsWith(trendYear))
-                    .map((d) => ({
-                        label: formatMonthShort(d.year_month),
-                        done: d.done_count,
-                        dispute: d.dispute_count,
-                    }))
+                ? data.monthlyTrend.map((d) => ({
+                    label: formatMonthShort(d.year_month),
+                    value: d.pm_count,
+                    done: d.done_count,
+                    dispute: d.dispute_count,
+                }))
                 : data.weeklyTrend.map((d) => ({
                     label: d.year_week,
+                    value: d.pm_count,
                     done: d.done_count,
                     dispute: d.dispute_count,
                 }));
@@ -224,22 +210,11 @@ export default function PmDashboard() {
                             title="PMs over time"
                             subtitle={
                                 trendView === "monthly"
-                                    ? `PMs done vs dispute, per month — ${trendYear || "all years"}`
-                                    : `PMs done vs dispute, per week — ${formatMonthFull(selectedWeeklyMonth)}`
+                                    ? "New PMs per month"
+                                    : `New PMs per week — ${formatMonthFull(selectedWeeklyMonth)}`
                             }
                             actions={
                                 <>
-                                    <Select
-                                        className="w-28"
-                                        aria-label="Year"
-                                        value={trendYear}
-                                        onChange={(e) => handleYearChange(e.target.value)}
-                                    >
-                                        <option value="">All years</option>
-                                        {years.map((y) => (
-                                            <option key={y} value={y}>{y}</option>
-                                        ))}
-                                    </Select>
                                     {trendView === "weekly" && (
                                         <Select
                                             className="w-32"
@@ -247,7 +222,7 @@ export default function PmDashboard() {
                                             value={selectedWeeklyMonth}
                                             onChange={(e) => setWeeklyMonth(e.target.value || undefined)}
                                         >
-                                            {weeklyMonthOptions.map((m) => (
+                                            {data.availableMonths.map((m) => (
                                                 <option key={m} value={m}>{formatMonthShort(m)}</option>
                                             ))}
                                         </Select>
@@ -264,16 +239,6 @@ export default function PmDashboard() {
                                 </>
                             }
                         >
-                            {/* Legend lives in the body so the header never changes size between views.
-                                Delete this block if your PmTrendChart already draws its own legend. */}
-                            <div className="mb-1 flex justify-end">
-                                <Legend
-                                    items={[
-                                        { label: "PM done", color: COLORS.green },
-                                        { label: "Dispute", color: COLORS.red },
-                                    ]}
-                                />
-                            </div>
                             <PmTrendChart data={trendPoints} />
                         </Card>
 
@@ -379,7 +344,8 @@ export default function PmDashboard() {
                         {pdfMissingTicket && (
                             <div className="mx-5 mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                                 <FileX size={14} className="shrink-0" />
-                                PDF not found for ticket {pdfMissingTicket}.
+                                Could not generate the PDF for ticket {pdfMissingTicket}
+                                {pdfError ? ` — ${pdfError}` : "."}
                             </div>
                         )}
 
@@ -414,7 +380,7 @@ export default function PmDashboard() {
                                             <td className={td}>{row.remarks}</td>
                                             <td className={td}>
                                                 <button
-                                                    onClick={() => handleOpenPdf(row.ticket_no)}
+                                                    onClick={() => handleOpenPdf(row.ticket_no, row.company)}
                                                     className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs transition-colors hover:bg-gray-50"
                                                 >
                                                     <FileText size={12} /> View
@@ -436,7 +402,17 @@ export default function PmDashboard() {
                 </>
             )}
 
-            {openPdf && <PdfViewerModal url={openPdf.url} title={openPdf.title} onClose={() => setOpenPdf(null)} />}
+            {openPdf && (
+                <PdfViewerModal
+                    url={openPdf.url}
+                    title={openPdf.title}
+                    filename={openPdf.filename}
+                    onClose={() => {
+                        URL.revokeObjectURL(openPdf.url);
+                        setOpenPdf(null);
+                    }}
+                />
+            )}
         </div>
     );
 }

@@ -12,7 +12,7 @@ router = APIRouter()
 any_user = require_roles("customer", "corob_employee")
 
 UNKNOWN = "Unknown model"
-TABLE_COLS = ["ticket_no", "dealer_code", "dealer_name", "machine_no", "call_date", "city", "region", "state"]
+TABLE_COLS = ["ticket_no", "dealer_code", "dealer_name", "machine_no", "call_date", "call_closure_address", "region", "state"]
 
 
 def _frame(company: str | None, user: CurrentUser):

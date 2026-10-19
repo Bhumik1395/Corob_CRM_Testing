@@ -35,5 +35,6 @@ PM_COLUMN_MAP = {
     "Dealer Code": "dealer_code",
     "Dealer Name": "dealer_name",
     "City/Location": "city",
+    "Call Closure Address": "call_closure_address",
     "Remarks/Solution Provided": "remarks",
 }

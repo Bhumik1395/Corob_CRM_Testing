@@ -268,3 +268,14 @@ export async function downloadPmReport(
     a.remove();
     window.URL.revokeObjectURL(url);
 }
+
+export async function fetchTicketPdf(token: string, ticketNo: string, company?: string): Promise<string> {
+    const params = new URLSearchParams({ ticket_no: ticketNo });
+    if (company) params.set("company", company);
+    const res = await fetch(`${API_BASE}/api/pm/ticket/pdf?${params}`, { headers: authHeaders(token) });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw body?.detail ?? body ?? { message: "Could not generate the PDF." };
+    }
+    return window.URL.createObjectURL(await res.blob());
+}

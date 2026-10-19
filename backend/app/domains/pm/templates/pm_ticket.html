@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>{{ ticket_no }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 3cm 1.8cm 2cm 1.8cm;
+
+            @top-left {
+                content: "PM Report";
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                font-weight: bold;
+                color: #164A38;
+                border-bottom: 0.6pt solid #164A38;
+                padding-bottom: 4px;
+                vertical-align: bottom;
+            }
+
+            @top-right {
+                content: "{{ ticket_no }}";
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                color: #666;
+                border-bottom: 0.6pt solid #164A38;
+                padding-bottom: 4px;
+                vertical-align: bottom;
+            }
+
+            @bottom-right {
+                content: "Page " counter(page) " of " counter(pages);
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 8px;
+                color: #666;
+            }
+        }
+
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            color: #1a1a1a;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #164A38;
+            text-align: center;
+            margin: 0 0 4px 0;
+        }
+
+        .gen {
+            text-align: center;
+            font-size: 9px;
+            color: #888;
+            margin: 0 0 14px 0;
+        }
+
+        h2 {
+            font-size: 13px;
+            color: #fff;
+            background: #164A38;
+            border-left: 6px solid #8DE41C;
+            padding: 6px 10px;
+            margin: 20px 0 8px 0;
+            break-after: avoid;
+        }
+
+        table.kv {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #164A38;
+            table-layout: fixed;
+        }
+
+        table.kv td {
+            border: 1px solid #c9d1cd;
+            padding: 6px 9px;
+            font-size: 10.5px;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        table.kv td.k {
+            width: 30%;
+            background: #f1f3f2;
+            font-weight: bold;
+            color: #164A38;
+        }
+
+        table.kv tr {
+            break-inside: avoid;
+        }
+
+        table.track {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #164A38;
+        }
+
+        table.track th {
+            background: #eaf8d3;
+            border: 1px solid #164A38;
+            padding: 6px 9px;
+            font-size: 10px;
+            text-align: left;
+        }
+
+        table.track td {
+            border: 1px solid #c9d1cd;
+            padding: 6px 9px;
+            font-size: 10.5px;
+        }
+
+        table.track td.when {
+            width: 32%;
+            color: #444;
+        }
+
+        .empty {
+            border: 1px solid #c9d1cd;
+            padding: 10px;
+            text-align: center;
+            color: #777;
+            font-size: 10.5px;
+        }
+
+        .sub {
+            font-size: 10px;
+            font-weight: bold;
+            color: #164A38;
+            margin: 12px 0 4px 0;
+        }
+
+        /* Service Report always starts on a new page, heading and table together */
+        .service {
+            break-before: page;
+        }
+
+        .service h2 {
+            margin-top: 0;
+        }
+
+        .photos {
+            break-before: page;
+        }
+
+        .photos h2 {
+            margin-top: 0;
+        }
+
+        .photo {
+            text-align: center;
+            border: 1px solid #c9d1cd;
+            padding: 8px;
+            margin-bottom: 14px;
+            break-inside: avoid;
+        }
+
+        .photo img {
+            max-width: 100%;
+            max-height: 11.5cm;
+        }
+
+        .photo .cap {
+            font-size: 9px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>PM Report</h1>
+    <p class="gen">Generated {{ generated_at }}</p>
+
+    <h2>Dealer Information</h2>
+    <table class="kv">
+        {% for r in dealer_info %}
+        <tr>
+            <td class="k">{{ r.label }}</td>
+            <td>{{ r.value }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Complaint Details</h2>
+    <table class="kv">
+        {% for r in complaint %}
+        <tr>
+            <td class="k">{{ r.label }}</td>
+            <td>{{ r.value }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <h2>Status Track</h2>
+    {% if track %}
+    <table class="track">
+        <thead>
+            <tr>
+                <th>Event</th>
+                <th>Date &amp; time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in track %}
+            <tr>
+                <td>{{ t.title }}</td>
+                <td class="when">{{ t.when }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No status events recorded.</div>
+    {% endif %}
+
+    <h2>Installation Report</h2>
+    <div class="empty">No Data Available to Display</div>
+
+    <p class="sub">Spare Replaced</p>
+    <div class="empty">No Data Available to Display</div>
+
+    <section class="service">
+        <h2>Service Report</h2>
+        <table class="kv">
+            {% for r in service if r.label != 'Customer Satisfaction' %}
+            <tr>
+                <td class="k">{{ r.label }}</td>
+                <td>{{ r.value }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section class="photos">
+        <h2>Images</h2>
+        {% if images %}
+        {% for img in images %}
+        <div class="photo">
+            <img src="{{ img }}">
+            <div class="cap">Image {{ loop.index }} of {{ images|length }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty">{{ image_note or "No images available." }}</div>
+        {% endif %}
+    </section>
+</body>
+
+</html>
