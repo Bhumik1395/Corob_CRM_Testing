@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.core.auth import CurrentUser, require_roles
-from app.domains.pm.outcome import next_question, count_matches, DONE, DISPUTE
+from app.domains.pm.outcome import next_question, count_matches, list_remarks, DONE, DISPUTE
 from app.domains.pm.rules_store import (get_learned_rules, save_rule, list_history, set_label, set_active)
 from app.domains.pm.cache import load_pm_df
 
@@ -32,19 +32,33 @@ def review_next(company: str | None = None, skip: str = "", user: CurrentUser = 
     return next_question(df, get_learned_rules(), skip=[s for s in skip.split("|") if s])
 
 
+@router.get("/api/pm/review/remarks")
+def review_remarks(
+    company: str | None = None,
+    status: str = "all",
+    search: str = "",
+    page: int = 1,
+    page_size: int = 25,
+    user: CurrentUser = Depends(employee_only),
+):
+    df = load_pm_df(user, company)
+    if df is None:
+        raise HTTPException(404, {"error": "no_data", "message": "No PM data uploaded yet for this company."})
+    return list_remarks(df, get_learned_rules(), status=status, search=search, page=max(page, 1), page_size=min(max(page_size, 1), 100))
+
+
 @router.post("/api/pm/review/answer")
 def review_answer(body: Answer, user: CurrentUser = Depends(employee_only)):
     _check_label(body.label)
     try:
         save_rule(body.phrase, body.label, user.username)
     except ValueError:
-        raise HTTPException(400, {"error": "bad_phrase", "message": "Phrase must have at least 2 words."})
+        raise HTTPException(400, {"error": "bad_phrase", "message": "Phrase must be 1 to 255 characters."})
     return {"saved": True}
 
 
 @router.get("/api/pm/review/history")
 def review_history(company: str | None = None, scope: str = "mine", user: CurrentUser = Depends(employee_only)):
-    """scope=mine: rules this employee answered or changed. scope=all: every rule."""
     rules = list_history(None if scope == "all" else user.username)
     counts = {}
     if company:
@@ -54,7 +68,6 @@ def review_history(company: str | None = None, scope: str = "mine", user: Curren
     for r in rules:
         r["rowsAffected"] = counts.get(r["phrase"]) if counts else None
     return {"rules": rules}
-
 
 
 @router.post("/api/pm/review/rules/{rule_id}/label")

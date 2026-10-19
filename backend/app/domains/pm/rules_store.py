@@ -16,7 +16,6 @@ def get_learned_rules():
 
 
 def list_history(only_user=None):
-    """All rules, newest change first. only_user -> just the rules that person has answered or changed."""
     sql = """SELECT r.id, r.phrase, r.label, r.answered_by, r.is_active, r.created_at, r.updated_at,
                     (SELECT COUNT(*) FROM pm_phrase_rule_log l WHERE l.rule_id = r.id) AS log_count
              FROM pm_phrase_rules r"""
@@ -32,7 +31,7 @@ def list_history(only_user=None):
 
 def save_rule(phrase, label, user):
     phrase = norm(phrase)
-    if len(phrase.split()) < 2 or label not in (DONE, DISPUTE):
+    if not phrase or len(phrase) > 255 or label not in (DONE, DISPUTE):
         raise ValueError("invalid rule")
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute("SELECT id, label FROM pm_phrase_rules WHERE phrase = %s", (phrase,))
@@ -47,7 +46,6 @@ def save_rule(phrase, label, user):
 
 
 def set_label(rule_id, label, user):
-    """Change an existing answer. Returns False if the rule does not exist."""
     if label not in (DONE, DISPUTE):
         raise ValueError("invalid label")
     with get_connection() as conn, conn.cursor() as cur:

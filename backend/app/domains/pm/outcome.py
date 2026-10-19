@@ -10,7 +10,6 @@ FILLER = {"the","is","are","was","were","and","of","in","to","at","by","on","for
 
 
 def _match_learned(t, learned):
-    """learned = [(phrase, label)] sorted longest first."""
     padded = f" {t} "
     hits = [(len(p), l) for p, l in learned if f" {p} " in padded]
     if not hits: return None
@@ -20,8 +19,10 @@ def _match_learned(t, learned):
 
 
 def label_text(text, learned):
-    """-> (label or None, source)."""
     t = norm(text)
+    for p, l in learned:
+        if p == t:
+            return l, "learned"
     tier = _tier(t)
     if tier == "Done (explicit)": return DONE, "rule"
     if tier == "Dispute (explicit)": return DISPUTE, "rule"
@@ -32,7 +33,6 @@ def label_text(text, learned):
 
 
 def apply_outcomes(df, learned):
-    """Adds pm_outcome / pm_resolved and makes is_closed mean 'PM Done' so the existing dashboard maths still works."""
     if "remarks" not in df.columns:
         return df
     df = df.copy()
@@ -45,7 +45,6 @@ def apply_outcomes(df, learned):
 
 
 def next_question(df, learned, skip=(), min_rows=5, max_words=4):
-    """The unresolved phrase that, once answered, settles the most rows."""
     remarks = df["remarks"].fillna("").astype(str) if "remarks" in df.columns else pd.Series([], dtype=str)
     counts = Counter(remarks)
     unresolved = {x: n for x, n in counts.items() if label_text(x, learned)[0] is None}
@@ -76,9 +75,58 @@ def next_question(df, learned, skip=(), min_rows=5, max_words=4):
 
 
 def count_matches(df, phrases):
-    """For each phrase: how many rows it actually decides (rows the explicit rules have not already settled)."""
     if "remarks" not in df.columns or not phrases:
         return {p: 0 for p in phrases}
     counts = Counter(norm(x) for x in df["remarks"].fillna("").astype(str))
     open_rows = [(f" {t} ", n) for t, n in counts.items() if _tier(t) not in ("Done (explicit)", "Dispute (explicit)")]
     return {p: sum(n for t, n in open_rows if f" {p} " in t) for p in phrases}
+
+
+def list_remarks(df, learned, status="all", search="", page=1, page_size=25):
+    if "remarks" not in df.columns:
+        return {"rows": [], "total": 0, "page": page, "pageSize": page_size,
+                "counts": {"done": 0, "dispute": 0, "unresolved": 0}}
+
+    raw = df["remarks"].fillna("").astype(str)
+    counts = Counter()
+    sample = {}
+    for x in raw:
+        t = norm(x)
+        if not t:
+            continue
+        counts[t] += 1
+        if t not in sample:
+            sample[t] = x.strip()
+
+    items = []
+    summary = {"done": 0, "dispute": 0, "unresolved": 0}
+    for t, n in counts.items():
+        label, source = label_text(t, learned)
+        if label == DONE:
+            summary["done"] += 1
+        elif label == DISPUTE:
+            summary["dispute"] += 1
+        else:
+            summary["unresolved"] += 1
+        items.append({"key": t, "remark": sample[t][:300], "rows": n, "label": label, "source": source})
+
+    if status == "unresolved":
+        items = [i for i in items if i["label"] is None]
+    elif status == "done":
+        items = [i for i in items if i["label"] == DONE]
+    elif status == "dispute":
+        items = [i for i in items if i["label"] == DISPUTE]
+
+    q = norm(search)
+    if q:
+        items = [i for i in items if q in i["key"]]
+
+    items.sort(key=lambda i: -i["rows"])
+    start = (page - 1) * page_size
+    return {
+        "rows": items[start:start + page_size],
+        "total": len(items),
+        "page": page,
+        "pageSize": page_size,
+        "counts": summary,
+    }

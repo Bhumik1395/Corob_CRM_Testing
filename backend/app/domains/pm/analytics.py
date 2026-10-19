@@ -2,7 +2,6 @@ import pandas as pd
 
 
 def _trend(df: pd.DataFrame, period_col: str) -> list[dict]:
-    """PMs per period split into done (closed) and dispute (still open)."""
     if df.empty:
         return []
     g = (
@@ -19,6 +18,7 @@ def _trend(df: pd.DataFrame, period_col: str) -> list[dict]:
 
 def compute_pm_dashboard(
     df: pd.DataFrame,
+    year: int | None = None,
     state: str | None = None,
     overall_month: str | None = None,
     month: str | None = None,
@@ -28,6 +28,9 @@ def compute_pm_dashboard(
     page: int = 1,
     page_size: int = 50,
 ) -> dict:
+    if year is not None:
+        df = df[df["call_date"].dt.year == year]
+
     filtered = df
     if state:
         filtered = filtered[filtered["state"] == state]
@@ -136,11 +139,15 @@ def compute_pm_dashboard(
     }
 
 
-def compute_pm_filter_options(df: pd.DataFrame) -> dict:
-    months: list[str] = []
+def compute_pm_filter_options(df: pd.DataFrame, year: int | None = None) -> dict:
+    years: list[int] = []
     if "call_date" in df.columns:
-        months = sorted(
-            df["call_date"].dropna().dt.strftime("%Y-%m").unique().tolist()
-        )
-    states = sorted(df["state"].dropna().unique().tolist()) if "state" in df.columns else []
-    return {"states": states, "months": months}
+        years = sorted(int(y) for y in df["call_date"].dropna().dt.year.unique())
+
+    scoped = df[df["call_date"].dt.year == year] if year is not None else df
+
+    months: list[str] = []
+    if "call_date" in scoped.columns:
+        months = sorted(scoped["call_date"].dropna().dt.strftime("%Y-%m").unique().tolist())
+    states = sorted(scoped["state"].dropna().unique().tolist()) if "state" in scoped.columns else []
+    return {"years": years, "states": states, "months": months}

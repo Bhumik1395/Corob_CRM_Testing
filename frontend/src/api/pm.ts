@@ -80,6 +80,7 @@ export interface ReviewHistoryRow {
 }
 
 export interface PmFilterOptions {
+    years: number[];
     states: string[];
     months: string[];
 }
@@ -143,6 +144,7 @@ export async function getPmDashboard(
     token: string,
     opts: {
         company?: string;
+        year?: number;
         state?: string;
         overallMonth?: string;
         month?: string;
@@ -155,6 +157,7 @@ export async function getPmDashboard(
 ): Promise<PmDashboardResponse> {
     const params = new URLSearchParams();
     if (opts.company) params.set("company", opts.company);
+    if (opts.year) params.set("year", String(opts.year));
     if (opts.state) params.set("state", opts.state);
     if (opts.overallMonth) params.set("overall_month", opts.overallMonth);
     if (opts.month) params.set("month", opts.month);
@@ -168,9 +171,10 @@ export async function getPmDashboard(
     return handle<PmDashboardResponse>(res);
 }
 
-export async function getPmFilterOptions(token: string, company?: string): Promise<PmFilterOptions> {
+export async function getPmFilterOptions(token: string, company?: string, year?: number): Promise<PmFilterOptions> {
     const params = new URLSearchParams();
     if (company) params.set("company", company);
+    if (year) params.set("year", String(year));
     const res = await fetch(`${API_BASE}/api/pm/filters?${params}`, { headers: authHeaders(token) });
     return handle<PmFilterOptions>(res);
 }
@@ -278,4 +282,35 @@ export async function fetchTicketPdf(token: string, ticketNo: string, company?: 
         throw body?.detail ?? body ?? { message: "Could not generate the PDF." };
     }
     return window.URL.createObjectURL(await res.blob());
+}
+
+export interface RemarkRow {
+    key: string;
+    remark: string;
+    rows: number;
+    label: "PM Done" | "Dispute" | null;
+    source: string;
+}
+
+export interface RemarkListResponse {
+    rows: RemarkRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    counts: { done: number; dispute: number; unresolved: number };
+}
+
+export async function getReviewRemarks(
+    token: string,
+    company: string | undefined,
+    opts: { status?: string; search?: string; page?: number; pageSize?: number } = {}
+): Promise<RemarkListResponse> {
+    const params = new URLSearchParams();
+    if (company) params.set("company", company);
+    params.set("status", opts.status ?? "all");
+    if (opts.search) params.set("search", opts.search);
+    params.set("page", String(opts.page ?? 1));
+    params.set("page_size", String(opts.pageSize ?? 25));
+    const res = await fetch(`${API_BASE}/api/pm/review/remarks?${params}`, { headers: authHeaders(token) });
+    return handle<RemarkListResponse>(res);
 }

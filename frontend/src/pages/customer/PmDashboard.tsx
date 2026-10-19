@@ -24,12 +24,13 @@ const td = "px-4 py-2.5";
 
 export default function PmDashboard() {
     const { token, roles, company: myCompany } = useAuth();
+    const [year, setYear] = useState("");
     const [state, setState] = useState("");
     const [page, setPage] = useState(1);
     const [expandedRegions, setExpandedRegions] = useState<Set<string>>(new Set());
-    const [openPdf, setOpenPdf] = useState<{ url: string; title: string; filename: string } | null>(null);
+    const [openPdf, setOpenPdf] = useState<{ url: string; title: string } | null>(null);
+    const [pdfLoadingTicket, setPdfLoadingTicket] = useState<string | null>(null);
     const [pdfMissingTicket, setPdfMissingTicket] = useState<string | null>(null);
-    const [pdfError, setPdfError] = useState<string | null>(null);
 
     const [trendView, setTrendView] = useState<TrendView>("monthly");
     const [weeklyMonth, setWeeklyMonth] = useState<string | undefined>(undefined);
@@ -59,16 +60,18 @@ export default function PmDashboard() {
     });
 
     const { data: filterOptions } = useQuery({
-        queryKey: ["pmFilterOptions", activeCompany],
-        queryFn: () => getPmFilterOptions(token!, activeCompany),
+        queryKey: ["pmFilterOptions", activeCompany, year],
+        queryFn: () => getPmFilterOptions(token!, activeCompany, year ? Number(year) : undefined),
         enabled: !!token && !!activeCompany,
+        placeholderData: keepPreviousData,
     });
 
     const { data, isLoading, isFetching, isError, error } = useQuery({
-        queryKey: ["pmDashboard", activeCompany, state, weeklyMonth, dealerSearch, detailState, detailMonth, page],
+        queryKey: ["pmDashboard", activeCompany, year, state, weeklyMonth, dealerSearch, detailState, detailMonth, page],
         queryFn: () =>
             getPmDashboard(token!, {
                 company: activeCompany,
+                year: year ? Number(year) : undefined,
                 state: state || undefined,
                 month: weeklyMonth,
                 dealerCode: dealerSearch || undefined,
@@ -80,6 +83,10 @@ export default function PmDashboard() {
         placeholderData: keepPreviousData,
     });
 
+    useEffect(() => {
+        if (year && filterOptions && !filterOptions.years.includes(Number(year))) setYear("");
+    }, [filterOptions, year]);
+
     const toggleRegion = (region: string) =>
         setExpandedRegions((prev) => {
             const next = new Set(prev);
@@ -88,22 +95,23 @@ export default function PmDashboard() {
             return next;
         });
 
-    // Generates the per-ticket PM report on the server and shows it in the modal.
-    // For "All companies" the row's own company is sent, because the backend needs a real company.
+    const closePdf = () => {
+        if (openPdf) window.URL.revokeObjectURL(openPdf.url);
+        setOpenPdf(null);
+    };
+
     const handleOpenPdf = async (ticketNo: string, rowCompany?: string) => {
         setPdfMissingTicket(null);
-        setPdfError(null);
+        setPdfLoadingTicket(ticketNo);
+        const pdfCompany = rowCompany || (activeCompany && activeCompany !== ALL ? activeCompany : undefined);
         try {
-            const url = await fetchTicketPdf(token!, ticketNo, rowCompany || activeCompany);
-            setOpenPdf({
-                url,
-                title: `PM Report — ${ticketNo}`,
-                // Slashes and other characters are not valid in file names.
-                filename: `${ticketNo.replace(/[\\/:*?"<>|]/g, "_")}.pdf`,
-            });
-        } catch (e: any) {
+            const url = await fetchTicketPdf(token!, ticketNo, pdfCompany);
+            if (openPdf) window.URL.revokeObjectURL(openPdf.url);
+            setOpenPdf({ url, title: `PM Report — ${ticketNo}` });
+        } catch {
             setPdfMissingTicket(ticketNo);
-            setPdfError(typeof e === "string" ? e : e?.message ?? e?.error ?? "Unexpected server response.");
+        } finally {
+            setPdfLoadingTicket(null);
         }
     };
 
@@ -143,6 +151,24 @@ export default function PmDashboard() {
                         <option value={ALL}>All companies</option>
                         {companiesData?.companies.map((c) => (
                             <option key={c} value={c}>{c}</option>
+                        ))}
+                    </Select>
+                )}
+                {activeCompany && (
+                    <Select
+                        className="w-36"
+                        aria-label="Year"
+                        value={year}
+                        onChange={(e) => {
+                            setPage(1);
+                            setWeeklyMonth(undefined);
+                            setDetailMonth("");
+                            setYear(e.target.value);
+                        }}
+                    >
+                        <option value="">All years</option>
+                        {filterOptions?.years.map((y) => (
+                            <option key={y} value={y}>{y}</option>
                         ))}
                     </Select>
                 )}
@@ -344,8 +370,7 @@ export default function PmDashboard() {
                         {pdfMissingTicket && (
                             <div className="mx-5 mt-3 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                                 <FileX size={14} className="shrink-0" />
-                                Could not generate the PDF for ticket {pdfMissingTicket}
-                                {pdfError ? ` — ${pdfError}` : "."}
+                                Could not generate the PDF for ticket {pdfMissingTicket}.
                             </div>
                         )}
 
@@ -381,9 +406,11 @@ export default function PmDashboard() {
                                             <td className={td}>
                                                 <button
                                                     onClick={() => handleOpenPdf(row.ticket_no, row.company)}
-                                                    className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs transition-colors hover:bg-gray-50"
+                                                    disabled={pdfLoadingTicket === row.ticket_no}
+                                                    className="flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs transition-colors hover:bg-gray-50 disabled:opacity-60"
                                                 >
-                                                    <FileText size={12} /> View
+                                                    <FileText size={12} />
+                                                    {pdfLoadingTicket === row.ticket_no ? "Loading…" : "View"}
                                                 </button>
                                             </td>
                                         </tr>
@@ -402,17 +429,7 @@ export default function PmDashboard() {
                 </>
             )}
 
-            {openPdf && (
-                <PdfViewerModal
-                    url={openPdf.url}
-                    title={openPdf.title}
-                    filename={openPdf.filename}
-                    onClose={() => {
-                        URL.revokeObjectURL(openPdf.url);
-                        setOpenPdf(null);
-                    }}
-                />
-            )}
+            {openPdf && <PdfViewerModal url={openPdf.url} title={openPdf.title} onClose={closePdf} />}
         </div>
     );
 }

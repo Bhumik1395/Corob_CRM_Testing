@@ -18,12 +18,13 @@ def _frame_or_404(company: str):
             "error": "no_data",
             "message": f"No PM data uploaded yet for {where}.",
         })
-    return apply_outcomes(df, get_learned_rules())
+    return df
 
 
 @router.get("/api/pm/dashboard")
 def pm_dashboard(
     company: str | None = None,
+    year: int | None = None,
     state: str | None = None,
     overall_month: str | None = None,
     month: str | None = None,
@@ -36,8 +37,10 @@ def pm_dashboard(
 ):
     resolved_company = resolve_company(user, company, allow_all=True)
     df = _frame_or_404(resolved_company)
+    df = apply_outcomes(df, get_learned_rules())
     return compute_pm_dashboard(
         df,
+        year=year,
         state=state,
         overall_month=overall_month,
         month=month,
@@ -52,8 +55,9 @@ def pm_dashboard(
 @router.get("/api/pm/filters")
 def pm_filters(
     company: str | None = None,
+    year: int | None = None,
     user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
 ):
     resolved_company = resolve_company(user, company, allow_all=True)
     df = _frame_or_404(resolved_company)
-    return compute_pm_filter_options(df)
+    return compute_pm_filter_options(df, year=year)
