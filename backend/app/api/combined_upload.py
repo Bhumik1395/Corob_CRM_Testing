@@ -1,4 +1,5 @@
 import io
+import logging
 
 import openpyxl
 import pandas as pd
@@ -6,6 +7,14 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 
 from app.core.auth import CurrentUser, require_roles
 from app.core.config import SESSION_TTL_SECONDS
+from app.domains.installation.cache import relink_installation_engineers, save_installation_data
+from app.domains.installation.excel_service import (
+    ValidationError as InstallValidationError,
+    describe_sheets,
+    find_installation_sheet,
+    load_installation_excel,
+    process_installation_dataframe,
+)
 from app.domains.pm.cache import save_pm_data
 from app.domains.pm.excel_service import process_pm_dataframe
 from app.domains.pm.schema_contract import PM_SCHEMA_CONTRACT
@@ -16,8 +25,11 @@ from app.domains.service_calls.schema_contract import SCHEMA_CONTRACT
 from app.domains.service_calls.session_cache import create_session
 from app.domains.service_calls.validation import ValidationError as ServiceValidationError
 from app.domains.service_calls.validation import validate_excel
+from app.shared.engineer_resolver import resolve_engineers
+from app.shared.employee_mapping_service import learn_from_frame
 
 router = APIRouter()
+log = logging.getLogger(__name__)
 
 MAX_FILES = 10
 
@@ -50,6 +62,9 @@ def upload_combined(
 
     pm_frames: list[pd.DataFrame] = []
     pm_file_results = []
+
+    install_frames: list[pd.DataFrame] = []
+    install_file_results = []
 
     unrecognized: list[str] = []
 
@@ -91,22 +106,41 @@ def upload_combined(
             pm_frames.append(df)
             pm_file_results.append({"filename": f.filename, "row_count": len(df)})
 
+        # Installation files are recognised by their column headers, not the sheet name.
+        elif (found := find_installation_sheet(contents)) is not None:
+            try:
+                raw = load_installation_excel(contents, f.filename, found)
+            except InstallValidationError as e:
+                raise HTTPException(400, {"error": e.reason, "message": e.detail})
+            df = process_installation_dataframe(raw)
+            if df.empty:
+                raise HTTPException(400, {
+                    "error": "no_valid_rows",
+                    "message": f"'{f.filename}' has no rows with both a machine number and a valid installation date.",
+                })
+            install_frames.append(df)
+            install_file_results.append({"filename": f.filename, "row_count": len(df)})
+
         else:
-            unrecognized.append(f.filename)
+            unrecognized.append(f"{f.filename} ({describe_sheets(contents)})")
 
     if unrecognized:
-        service_sheet = SCHEMA_CONTRACT["sheet_name"]
-        pm_sheet = PM_SCHEMA_CONTRACT["sheet_name"]
         raise HTTPException(400, {
             "error": "unrecognized_sheet",
             "message": (
-                f"Couldn't tell what kind of data this is for: {', '.join(unrecognized)}. "
-                f"Expected a sheet named '{service_sheet}' (Service Calls) "
-                f"or '{pm_sheet}' (PM)."
+                f"Couldn't tell what kind of data this is for: {'; '.join(unrecognized)}. "
+                f"Expected a sheet named '{SCHEMA_CONTRACT['sheet_name']}' (Service Calls), "
+                f"'{PM_SCHEMA_CONTRACT['sheet_name']}' (PM), or an Installation sheet with "
+                f"'Machine No.' and 'Installation Date' columns."
             ),
         })
 
-    result: dict = {"serviceCalls": None, "pm": None}
+    # Every file validated: only now teach the engineer directory, so a
+    # rejected upload never writes anything.
+    for frame in service_frames + pm_frames:
+        learn_from_frame(frame)
+
+    result: dict = {"serviceCalls": None, "pm": None, "installation": None}
 
     if service_frames:
         combined_service = pd.concat(service_frames, ignore_index=True)
@@ -138,5 +172,19 @@ def upload_combined(
             "files": pm_file_results,
             "companies": [{"company": c, "total_rows_stored": n} for c, n in saved.items()],
         }
+
+    if install_frames:
+        combined_install = resolve_engineers(pd.concat(install_frames, ignore_index=True))
+        result["installation"] = {
+            "files": install_file_results,
+            "row_count": len(combined_install),
+            "total_rows_stored": save_installation_data(combined_install),
+        }
+
+    if service_frames or pm_frames:
+        try:
+            relink_installation_engineers()
+        except Exception:
+            log.exception("Could not re-link installation engineers")
 
     return result
