@@ -5,7 +5,9 @@ from app.domains.engineers.analytics import (
     compute_engineer_combined,
     compute_engineer_monthly,
     compute_engineer_visits,
+    prepare_installation,
 )
+from app.domains.installation.cache import get_installation_data
 from app.domains.pm.cache import get_all_pm_data
 from app.domains.pm.outcome import apply_outcomes
 from app.domains.pm.rules_store import get_learned_rules
@@ -13,7 +15,7 @@ from app.domains.service_calls.session_cache import get_session_data
 
 router = APIRouter()
 
-SOURCES = ("service", "pm")
+SOURCES = ("service", "pm", "installation")
 
 
 def _service_df_or_none(request: Request):
@@ -33,6 +35,10 @@ def _pm_df_or_none():
     return apply_outcomes(df, get_learned_rules())
 
 
+def _installation_df_or_none():
+    return prepare_installation(get_installation_data())
+
+
 def _load_df(request: Request, source: str):
     if source not in SOURCES:
         raise HTTPException(400, {"error": "bad_source", "message": f"source must be one of {', '.join(SOURCES)}."})
@@ -41,6 +47,12 @@ def _load_df(request: Request, source: str):
         df = _service_df_or_none(request)
         if df is None:
             raise HTTPException(401, {"error": "session_expired", "message": "Upload a Service Calls file first."})
+        return df
+
+    if source == "installation":
+        df = _installation_df_or_none()
+        if df is None:
+            raise HTTPException(404, {"error": "no_data", "message": "No Installation data uploaded yet."})
         return df
 
     df = _pm_df_or_none()
@@ -68,9 +80,10 @@ def engineer_utilization(
     """Quota days / utilization: each source checked on its own, any one meeting it counts."""
     service_df = _service_df_or_none(request)
     pm_df = _pm_df_or_none()
-    if service_df is None and pm_df is None:
-        raise HTTPException(404, {"error": "no_data", "message": "Upload Service Calls and/or PM data first."})
-    return compute_engineer_combined(service_df, pm_df, eng_code)
+    installation_df = _installation_df_or_none()
+    if service_df is None and pm_df is None and installation_df is None:
+        raise HTTPException(404, {"error": "no_data", "message": "Upload Service Calls, PM and/or Installation data first."})
+    return compute_engineer_combined(service_df, pm_df, eng_code, installation_df)
 
 
 @router.get("/api/engineers/visits")

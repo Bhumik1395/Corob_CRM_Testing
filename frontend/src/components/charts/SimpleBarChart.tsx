@@ -8,6 +8,7 @@ export function SimpleBarChart({
     color = COLORS.green,
     horizontal = false,
     height = 200,
+    showTooltip = true,
 }: {
     data: Record<string, string | number>[];
     xKey: string;
@@ -15,6 +16,7 @@ export function SimpleBarChart({
     color?: string;
     horizontal?: boolean;
     height?: number;
+    showTooltip?: boolean;
 }) {
     const categories = data.map((d) => String(d[xKey]));
     const values = data.map((d) => d[yKey]);
@@ -68,5 +70,10 @@ export function SimpleBarChart({
             ],
         };
 
-    return <ReactECharts option={option} style={{ height }} />;
+    return (
+        <ReactECharts
+            option={showTooltip ? option : { ...option, tooltip: { show: false } }}
+            style={{ height }}
+        />
+    );
 }

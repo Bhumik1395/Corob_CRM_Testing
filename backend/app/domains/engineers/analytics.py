@@ -12,6 +12,16 @@ SERVICE_DETAIL_COLS = [
 def _clean_code(eng_code: str) -> str:
     return str(eng_code).strip()
 
+def prepare_installation(df):
+    """Shape the stored Installation frame like the call frames so the same
+    quota logic applies. Only rows linked to an engineer code are usable."""
+    if df is None:
+        return None
+    d = df.copy()
+    d["call_date"] = pd.to_datetime(d["install_date"], errors="coerce")
+    d["loc_up_rem"] = d["loc_up_rem"].fillna("").astype(str).str.strip()
+    d["eng_code"] = d["eng_code"].fillna("").astype(str).str.strip()
+    return d[(d["eng_code"] != "") & d["call_date"].notna()]
 
 def _engineer_rows(df: pd.DataFrame, eng_code: str) -> pd.DataFrame:
     d = df[df["eng_code"].astype(str).str.strip() == _clean_code(eng_code)]
@@ -85,6 +95,9 @@ def compute_engineer_monthly(df: pd.DataFrame, eng_code: str, source: str) -> di
         closed = rows["is_closed"] if "is_closed" in rows.columns else pd.Series(True, index=rows.index)
         d = rows[closed]
         negative = rows[~closed].groupby("year_month").size()
+    elif source == "installation":
+        d = rows
+        negative = pd.Series(dtype="int64")
     else:
         d = rows
         reps = d.groupby(["year_month", "machine_no"]).size().reset_index(name="cnt")
@@ -140,7 +153,7 @@ def compute_engineer_monthly(df: pd.DataFrame, eng_code: str, source: str) -> di
     return {**base, "months": months, "totals": totals}
 
 
-def compute_engineer_combined(service_df, pm_df, eng_code: str) -> dict:
+def compute_engineer_combined(service_df, pm_df, eng_code: str, installation_df=None) -> dict:
     """Utilization across sources. Each source is checked against the quota on its
     own (2 local or 1 upcountry/remote per day). A day counts as utilized if ANY
     source met its quota. Sources are NOT pooled together.
@@ -164,6 +177,13 @@ def compute_engineer_combined(service_df, pm_df, eng_code: str) -> dict:
             r = r[r["is_closed"]]
         sources.append("pm")
         splits["pm"] = _visit_split(r)
+        if not r.empty:
+            daily_frames.append(_daily_quota(r))
+
+    if installation_df is not None:
+        r = _engineer_rows(installation_df, eng_code)
+        sources.append("installation")
+        splits["installation"] = _visit_split(r)
         if not r.empty:
             daily_frames.append(_daily_quota(r))
 
@@ -252,6 +272,15 @@ def compute_engineer_visits(
         page_df["status"] = status
         page_df["call_date"] = page_df["call_date"].dt.strftime("%Y-%m-%d")
         return {**base, "rows": page_df.to_dict("records"), "totalRows": total}
+
+    if source == "installation":
+        d = d.sort_values("call_date", ascending=False)
+        total = len(d)
+        page_df = d.iloc[start:start + page_size].copy()
+        page_df["install_date"] = page_df["call_date"].dt.strftime("%Y-%m-%d")
+        cols = [c for c in ("machine_no", "dealer_code", "dealer_name", "master_model",
+                            "loc_up_rem", "location", "state", "install_date") if c in page_df.columns]
+        return {**base, "rows": page_df[cols].fillna("").to_dict("records"), "totalRows": total}
 
     counts = d.groupby("machine_no").size()
     repeat = counts[counts > 1].sort_values(ascending=False)

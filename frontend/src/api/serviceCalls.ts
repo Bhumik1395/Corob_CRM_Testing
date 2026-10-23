@@ -1,3 +1,5 @@
+import type { InstallationUploadResult } from "./installation";
+
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 export interface StateRow {
@@ -135,6 +137,7 @@ export interface CombinedUploadResponse {
         files: { filename: string; row_count: number }[];
         companies: { company: string; total_rows_stored: number }[];
     } | null;
+    installation: InstallationUploadResult | null;
 }
 
 export function uploadCombined(

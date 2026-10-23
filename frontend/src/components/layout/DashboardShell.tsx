@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Gauge, PhoneCall, Printer, UploadCloud, Wrench } from "lucide-react";
+import { FileText, Gauge, Hammer, PhoneCall, Printer, UploadCloud, Wrench } from "lucide-react";
 import { downloadPdfReport } from "../../api/serviceCalls";
 import { deleteAllPmData } from "../../api/pm";
 import { FocusFilterProvider, useFocusFilter } from "../../context/FocusFilterContext";
@@ -11,8 +11,9 @@ import type { NavItem } from "./AppLayout";
 const navItems: NavItem[] = [
     { to: "/dashboard/focus", label: "Service Calls", icon: PhoneCall },
     { to: "/dashboard/pm", label: "Preventive Measure", icon: Wrench, end: true },
-    { to: "/dashboard/pm/print", label: "Print Docs", icon: Printer },
+    { to: "/dashboard/installation", label: "Installation", icon: Hammer },
     { to: "/dashboard/utilization", label: "Engineer Utilization", icon: Gauge },
+    { to: "/dashboard/pm/print", label: "Print Docs", icon: Printer },
 ];
 
 const pinnedItems: NavItem[] = [{ to: "/dashboard/upload", label: "Upload Data", icon: UploadCloud }];

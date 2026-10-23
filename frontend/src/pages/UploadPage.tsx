@@ -39,10 +39,10 @@ export default function UploadPage() {
                     Upload data
                 </h1>
                 <p className="text-center text-gray-500 mb-6">
-                    Drag and drop Service Calls and/or PM Excel (.xlsx) files together —
+                    Drag and drop Service Calls, PM and/or Installation Excel (.xlsx) files together —
                     each file is detected automatically and routed to the right dashboard.
                     Uploading a Service Calls file replaces the current session's data;
-                    PM files are merged into existing data per company.
+                    PM and Installation files are merged into existing data.
                 </p>
 
                 {mutation.isError && (
@@ -84,6 +84,17 @@ export default function UploadPage() {
                                     </ul>
                                 </div>
                             )}
+
+                            {mutation.data.installation && (
+                                <div>
+                                    <p className="text-sm font-medium">Installation</p>
+                                    <p className="text-sm">
+                                        {mutation.data.installation.row_count} rows uploaded across{" "}
+                                        {mutation.data.installation.files.length} file(s),{" "}
+                                        {mutation.data.installation.total_rows_stored} stored in total.
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
@@ -110,7 +121,7 @@ export default function UploadPage() {
                                 <UploadCloud style={{ color: "var(--color-accent)" }} size={26} />
                             </div>
                             <p className="font-medium mb-1">Drag & Drop file(s) here</p>
-                            <p className="text-sm text-gray-500 mb-4">Service Calls or PM data, .xlsx (Max 50MB each, up to 10 files)</p>
+                            <p className="text-sm text-gray-500 mb-4">Service Calls, PM or Installation data, .xlsx (Max 50MB each, up to 10 files)</p>
                             <div className="flex items-center gap-3 mb-4">
                                 <hr className="flex-1" /><span className="text-xs text-gray-400">OR</span><hr className="flex-1" />
                             </div>
@@ -165,6 +176,14 @@ export default function UploadPage() {
                                         className="flex-1 border text-sm font-medium px-4 py-2.5 rounded-md hover:bg-gray-50"
                                     >
                                         Go to PM Overview
+                                    </button>
+                                )}
+                                {mutation.data.installation && (
+                                    <button
+                                        onClick={() => navigate("/dashboard/installation")}
+                                        className="flex-1 border text-sm font-medium px-4 py-2.5 rounded-md hover:bg-gray-50"
+                                    >
+                                        Go to Installation
                                     </button>
                                 )}
                             </div>

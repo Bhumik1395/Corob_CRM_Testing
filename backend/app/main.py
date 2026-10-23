@@ -14,6 +14,7 @@ from app.domains.pm import (
     print_router as pm_print_router,
     ticket_router as pm_ticket_router
 )
+from app.domains.installation.router import router as installation_router
 from app.domains.service_calls import (
     router as service_calls_router,
     employees_router,
@@ -64,6 +65,7 @@ app.include_router(combined_upload.router)
 app.include_router(companies.router)
 app.include_router(pm_print_router.router)
 app.include_router(pm_ticket_router.router)
+app.include_router(installation_router)
 
 @app.get("/health")
 def health():

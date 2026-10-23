@@ -7,19 +7,15 @@ export interface InstallationKpis {
     engineers: number;
     models: number;
     upsAttachPct: number;
-    upcountryRemotePct: number;
-    /** % of named-engineer rows that could not be matched to an engineer code. */
-    unlinkedEngineerPct: number;
+    upcountryPct: number;
 }
 
-// type alias (not interface) so it is assignable to SimpleBarChart's Record<string, string | number>
 export type InstallationCount = { name: string; count: number };
 
 export interface InstallationSplit {
     total: number;
     local: number;
     upcountry: number;
-    remote: number;
 }
 
 export interface InstallationStateRow extends InstallationSplit {
@@ -37,26 +33,6 @@ export interface InstallationDealerRow {
     company: string;
     state: string;
     count: number;
-}
-
-export interface InstallationEngineerRow {
-    eng_code: string;
-    eng_name: string;
-    supervisor: string;
-    installs: number;
-    local: number;
-    upcountry: number;
-    remote: number;
-    dealers: number;
-    days_active: number;
-}
-
-export interface InstallationSupervisorRow {
-    supervisor: string;
-    installs: number;
-    engineers: number;
-    dealers: number;
-    upcountry_remote: number;
 }
 
 export interface InstallationDetailRow {
@@ -85,8 +61,6 @@ export interface InstallationDashboardResponse {
     upsModels: InstallationCount[];
     zoneBreakdown: InstallationZoneRow[];
     topDealers: InstallationDealerRow[];
-    engineers: InstallationEngineerRow[];
-    supervisors: InstallationSupervisorRow[];
     detailTable: {
         rows: InstallationDetailRow[];
         page: number;

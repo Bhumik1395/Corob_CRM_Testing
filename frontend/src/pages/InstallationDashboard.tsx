@@ -16,7 +16,7 @@ import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { formatMonthShort, monthName } from "../lib/format";
 import { COLORS } from "../lib/palette";
 
-type Panel = "zones" | "engineers" | "supervisors" | "dealers";
+type Panel = "zones" | "dealers";
 
 const th = "px-4 py-2.5 text-left text-xs font-medium text-muted";
 const td = "px-4 py-2.5";
@@ -30,7 +30,7 @@ const DETAIL_COLUMNS: { key: keyof InstallationDetailRow; label: string }[] = [
     { key: "install_date", label: "Installed" },
     { key: "ups_model", label: "UPS model" },
     { key: "ups_sn", label: "UPS S/N" },
-    { key: "loc_up_rem", label: "Loc/Up/Rem" },
+    { key: "loc_up_rem", label: "Loc/Up" },
     { key: "zone", label: "Zone" },
     { key: "state", label: "State" },
     { key: "location", label: "Location" },
@@ -58,12 +58,11 @@ function ZoneTable({ zones }: { zones: InstallationDashboardResponse["zoneBreakd
                         <th className={th}>Installations</th>
                         <th className={th}>Local</th>
                         <th className={th}>Upcountry</th>
-                        <th className={th}>Remote</th>
                     </tr>
                 </thead>
                 <tbody>
                     {zones.length === 0 && (
-                        <tr><td colSpan={6} className="p-6 text-center text-muted">No data for the current filters</td></tr>
+                        <tr><td colSpan={5} className="p-6 text-center text-muted">No data for the current filters</td></tr>
                     )}
                     {zones.map((z) => {
                         const isOpen = expanded.has(z.zone);
@@ -75,7 +74,6 @@ function ZoneTable({ zones }: { zones: InstallationDashboardResponse["zoneBreakd
                                     <td className={`${td} tabular-nums`}>{z.total.toLocaleString()}</td>
                                     <td className={`${td} tabular-nums`}>{z.local.toLocaleString()}</td>
                                     <td className={`${td} tabular-nums`}>{z.upcountry.toLocaleString()}</td>
-                                    <td className={`${td} tabular-nums`}>{z.remote.toLocaleString()}</td>
                                 </tr>
                                 {isOpen &&
                                     z.states.map((s, i) => (
@@ -85,7 +83,6 @@ function ZoneTable({ zones }: { zones: InstallationDashboardResponse["zoneBreakd
                                             <td className={`${td} tabular-nums`}>{s.total.toLocaleString()}</td>
                                             <td className={`${td} tabular-nums`}>{s.local.toLocaleString()}</td>
                                             <td className={`${td} tabular-nums`}>{s.upcountry.toLocaleString()}</td>
-                                            <td className={`${td} tabular-nums`}>{s.remote.toLocaleString()}</td>
                                         </tr>
                                     ))}
                             </Fragment>
@@ -160,8 +157,8 @@ export default function InstallationDashboard() {
                     <option value="">All Models</option>
                     {options?.models.map((m) => <option key={m} value={m}>{m}</option>)}
                 </Select>
-                <Select className="w-40" aria-label="Local, upcountry or remote" value={filters.loc_up_rem ?? ""} onChange={(e) => updateFilter("loc_up_rem", e.target.value)}>
-                    <option value="">Loc / Up / Rem</option>
+                <Select className="w-40" aria-label="Local or upcountry" value={filters.loc_up_rem ?? ""} onChange={(e) => updateFilter("loc_up_rem", e.target.value)}>
+                    <option value="">Local / Upcountry</option>
                     {options?.locTypes.map((t) => <option key={t} value={t}>{t}</option>)}
                 </Select>
                 <Select className="w-52" aria-label="Supervisor" value={filters.supervisor ?? ""} onChange={(e) => updateFilter("supervisor", e.target.value)}>
@@ -219,43 +216,33 @@ export default function InstallationDashboard() {
                         <KpiCard
                             label="With UPS recorded"
                             value={`${data.kpis.upsAttachPct}%`}
-                            caption={`${data.kpis.upcountryRemotePct}% upcountry / remote`}
+                            caption={`${data.kpis.upcountryPct}% upcountry`}
                         />
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
                         <Card className="col-span-2" title="Installations per month">
-                            <SimpleBarChart data={trend} xKey="label" yKey="count" height={230} />
+                            <SimpleBarChart data={trend} xKey="label" yKey="count" height={230} showTooltip={false} />
                         </Card>
-                        <Card title="Local / upcountry / remote">
-                            <SimpleBarChart horizontal data={data.locSplit} xKey="name" yKey="count" height={230} />
+                        <Card title="Local vs upcountry">
+                            <SimpleBarChart data={data.locSplit} xKey="name" yKey="count" height={230} showTooltip={false} />
                         </Card>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
                         <Card title="By company" subtitle="Top 10">
-                            <SimpleBarChart horizontal data={data.byCompany} xKey="name" yKey="count" height={300} />
+                            <SimpleBarChart horizontal data={data.byCompany} xKey="name" yKey="count" height={300} showTooltip={false} />
                         </Card>
                         <Card title="By master model" subtitle="Top 10">
-                            <SimpleBarChart horizontal color={COLORS.forest} data={data.byModel} xKey="name" yKey="count" height={300} />
+                            <SimpleBarChart horizontal color={COLORS.forest} data={data.byModel} xKey="name" yKey="count" height={300} showTooltip={false} />
                         </Card>
                         <Card title="UPS model" subtitle="Top 8">
-                            <SimpleBarChart horizontal color={COLORS.lime} data={data.upsModels} xKey="name" yKey="count" height={300} />
+                            <SimpleBarChart horizontal color={COLORS.lime} data={data.upsModels} xKey="name" yKey="count" height={300} showTooltip={false} />
                         </Card>
                     </div>
 
                     <Card
-                        title={
-                            panel === "zones" ? "Zone-wise breakdown"
-                                : panel === "engineers" ? "Installations by engineer"
-                                    : panel === "supervisors" ? "Installations by supervisor"
-                                        : "Top dealers"
-                        }
-                        subtitle={
-                            panel === "engineers" && data.kpis.unlinkedEngineerPct > 0
-                                ? `${data.kpis.unlinkedEngineerPct}% of installs have an engineer not found in the engineer directory (no code, so not in Engineer Utilization)`
-                                : undefined
-                        }
+                        title={panel === "zones" ? "Zone-wise breakdown" : "Top dealers"}
                         bodyClassName="mt-3 border-t border-border"
                         actions={
                             <Segmented<Panel>
@@ -264,80 +251,12 @@ export default function InstallationDashboard() {
                                 onChange={setPanel}
                                 options={[
                                     { value: "zones", label: "Zones" },
-                                    { value: "engineers", label: "Engineers" },
-                                    { value: "supervisors", label: "Supervisors" },
                                     { value: "dealers", label: "Dealers" },
                                 ]}
                             />
                         }
                     >
                         {panel === "zones" && <ZoneTable zones={data.zoneBreakdown} />}
-
-                        {panel === "engineers" && (
-                            <div className="max-h-[340px] overflow-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-[#F6F8F7]">
-                                        <tr>
-                                            <th className={th}>Engineer</th>
-                                            <th className={th}>Code</th>
-                                            <th className={th}>Supervisor</th>
-                                            <th className={th}>Installs</th>
-                                            <th className={th}>Local</th>
-                                            <th className={th}>Upcountry / remote</th>
-                                            <th className={th}>Dealers</th>
-                                            <th className={th}>Days active</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.engineers.length === 0 && (
-                                            <tr><td colSpan={8} className="p-6 text-center text-muted">No engineers for the current filters</td></tr>
-                                        )}
-                                        {data.engineers.map((e) => (
-                                            <tr key={e.eng_name} className="border-t border-border hover:bg-gray-50">
-                                                <td className={`${td} font-medium`}>{e.eng_name}</td>
-                                                <td className={`${td} text-muted`}>{e.eng_code || "—"}</td>
-                                                <td className={td}>{e.supervisor || "—"}</td>
-                                                <td className={`${td} tabular-nums`}>{e.installs.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{e.local.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{(e.upcountry + e.remote).toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{e.dealers.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{e.days_active.toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {panel === "supervisors" && (
-                            <div className="max-h-[340px] overflow-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-[#F6F8F7]">
-                                        <tr>
-                                            <th className={th}>Supervisor</th>
-                                            <th className={th}>Engineers</th>
-                                            <th className={th}>Installs</th>
-                                            <th className={th}>Dealers</th>
-                                            <th className={th}>Upcountry / remote</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.supervisors.length === 0 && (
-                                            <tr><td colSpan={5} className="p-6 text-center text-muted">No supervisors for the current filters</td></tr>
-                                        )}
-                                        {data.supervisors.map((s) => (
-                                            <tr key={s.supervisor} className="border-t border-border hover:bg-gray-50">
-                                                <td className={`${td} font-medium`}>{s.supervisor}</td>
-                                                <td className={`${td} tabular-nums`}>{s.engineers.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{s.installs.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{s.dealers.toLocaleString()}</td>
-                                                <td className={`${td} tabular-nums`}>{s.upcountry_remote.toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
 
                         {panel === "dealers" && (
                             <div className="max-h-[340px] overflow-auto">

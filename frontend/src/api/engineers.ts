@@ -2,7 +2,7 @@ import type { RepeatMachineRow } from "./serviceCalls";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
-export type EngineerSource = "service" | "pm";
+export type EngineerSource = "service" | "pm" | "installation";
 
 export interface EngineerMonthRow {
     year_month: string;
@@ -41,7 +41,7 @@ export interface EngineerUtilizationResponse {
         days_active: number;
         days_quota_met: number;
         utilization_pct: number;
-        visits?: { service?: VisitSplit; pm?: VisitSplit };
+        visits?: { service?: VisitSplit; pm?: VisitSplit; installation?: VisitSplit };
     }[];
     totals: { daysQuotaMet: number; totalWorkingDays: number; utilizationPct: number };
 }
@@ -55,6 +55,17 @@ export interface PmVisitRow {
     status: "PM Done" | "Dispute";
 }
 
+export interface InstallationVisitRow {
+    machine_no: string;
+    dealer_code: string;
+    dealer_name: string;
+    master_model: string;
+    loc_up_rem: string;
+    location: string;
+    state: string;
+    install_date: string;
+}
+
 interface VisitsPaging {
     page: number;
     pageSize: number;
@@ -62,9 +73,11 @@ interface VisitsPaging {
     month: string;
     engineer: { eng_code: string; name: string };
 }
+
 export type EngineerVisitsResponse =
     | ({ source: "service"; rows: RepeatMachineRow[] } & VisitsPaging)
-    | ({ source: "pm"; rows: PmVisitRow[] } & VisitsPaging);
+    | ({ source: "pm"; rows: PmVisitRow[] } & VisitsPaging)
+    | ({ source: "installation"; rows: InstallationVisitRow[] } & VisitsPaging);
 
 async function get<T>(path: string, params: URLSearchParams, token: string): Promise<T> {
     const res = await fetch(`${API_BASE}${path}?${params}`, {

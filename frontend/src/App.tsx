@@ -16,6 +16,7 @@ import CustomerDashboardShell from "./components/layout/CustomerDashboardShell";
 import PmDashboard from "./pages/customer/PmDashboard";
 import PmUploadPage from "./pages/customer/PmUploadPage";
 import PmPrintPage from "./pages/customer/PmPrintPage";
+import InstallationDashboard from "./pages/InstallationDashboard";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ export default function App() {
                         <Route path="focus" element={<FocusMode />} />
                         <Route path="pm" element={<PmDashboard />} />
                         <Route path="utilization" element={<EngineerUtilization />} />
+                        <Route path="installation" element={<InstallationDashboard />} />
                         <Route path="upload" element={<UploadPage />} />
                         <Route path="pm/print" element={<PmPrintPage />} />
                     </Route>

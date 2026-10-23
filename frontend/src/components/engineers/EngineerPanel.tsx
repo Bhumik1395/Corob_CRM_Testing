@@ -18,8 +18,6 @@ export interface SelectedEngineer {
     supervisor: string;
 }
 
-type Source = EngineerSource | "installation";
-
 const SOURCE_COPY: Record<EngineerSource, { countLabel: string; negativeLabel: string; errorHint: string }> = {
     service: {
         countLabel: "Service calls",
@@ -31,10 +29,15 @@ const SOURCE_COPY: Record<EngineerSource, { countLabel: string; negativeLabel: s
         negativeLabel: "PM Dispute",
         errorHint: "No PM data has been uploaded yet.",
     },
+    installation: {
+        countLabel: "Installations",
+        negativeLabel: "",
+        errorHint: "No Installation data has been uploaded yet.",
+    },
 };
 
 const QUOTA_RULE =
-    "A day counts as utilized if any one source meets its own quota: 2 local service calls, 2 local PMs, 1 upcountry/remote service call, or 1 upcountry/remote PM. Installation will be added once available.";
+    "A day counts as utilized if any one source meets its own quota: 2 local jobs or 1 upcountry/remote job in a day, where a job is a service call, a PM or an installation.";
 
 function VisitTypeCard({ label, split, soon }: { label: string; split?: VisitSplit; soon?: boolean }) {
     return (
@@ -68,11 +71,11 @@ export function EngineerPanel({
     month?: string;  // "" = all months
 }) {
     const { token } = useAuth();
-    const [source, setSource] = useState<Source>("service");
+    const [source, setSource] = useState<EngineerSource>("service");
     const [month, setMonth] = useState("");
     const [yearSel, setYearSel] = useState("");
 
-    const activeSource: EngineerSource = source === "pm" ? "pm" : "service";
+    const activeSource: EngineerSource = source;
     const inPeriod = (ym: string) => {
         const [y, mo] = ym.split("-");
         return (!year || y === year) && (!monthFilter || parseInt(mo, 10) === parseInt(monthFilter, 10));
@@ -81,7 +84,7 @@ export function EngineerPanel({
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ["engineerMonthly", engineer?.eng_code, activeSource],
         queryFn: () => getEngineerMonthly(token!, engineer!.eng_code, activeSource),
-        enabled: !!token && !!engineer && source !== "installation",
+        enabled: !!token && !!engineer,
         retry: false,
     });
 
@@ -195,7 +198,7 @@ export function EngineerPanel({
                         <KpiCard
                             label="Days quota met (combined)"
                             value={`${curCombined?.days_quota_met ?? 0} / ${workingDays}`}
-                            caption={combined?.sources.length ? combined.sources.map((s) => (s === "pm" ? "PM" : "Service")).join(" + ") : undefined}
+                            caption={combined?.sources.length ? combined.sources.map((s) => (s === "pm" ? "PM" : s === "installation" ? "Installation" : "Service")).join(" + ") : undefined}
                         />
                         <KpiCard
                             tone="green"
@@ -210,14 +213,14 @@ export function EngineerPanel({
             {!loading && (
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm font-medium">Work type</p>
-                    <Segmented<Source>
+                    <Segmented<EngineerSource>
                         label="Work type"
                         value={source}
                         onChange={setSource}
                         options={[
                             { value: "service", label: "Service calls" },
                             { value: "pm", label: "PM" },
-                            { value: "installation", label: "Installation (soon)", disabled: true },
+                            { value: "installation", label: "Installation" },
                         ]}
                     />
                 </div>
@@ -226,9 +229,11 @@ export function EngineerPanel({
             {!loading && currentKey && (
                 <>
                     {/* 4. Service / repeat calls (follow the work type) */}
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className={`grid gap-3 ${activeSource === "installation" ? "grid-cols-1" : "grid-cols-2"}`}>
                         <KpiCard label={copy.countLabel} value={(cur?.count ?? 0).toLocaleString()} />
-                        <KpiCard tone="red" label={copy.negativeLabel} value={(cur?.negative_count ?? 0).toLocaleString()} />
+                        {activeSource !== "installation" && (
+                            <KpiCard tone="red" label={copy.negativeLabel} value={(cur?.negative_count ?? 0).toLocaleString()} />
+                        )}
                     </div>
 
                     {/* 5. Local vs upcountry visits by type */}
@@ -237,7 +242,7 @@ export function EngineerPanel({
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <VisitTypeCard label="Service calls" split={curCombined?.visits?.service} />
                             <VisitTypeCard label="PM Done" split={curCombined?.visits?.pm} />
-                            <VisitTypeCard label="Installations" soon />
+                            <VisitTypeCard label="Installations" split={curCombined?.visits?.installation} />
                         </div>
                     </div>
                 </>
@@ -267,7 +272,7 @@ export function EngineerPanel({
                             <Legend
                                 items={[
                                     { label: copy.countLabel, color: COLORS.green },
-                                    { label: copy.negativeLabel, color: COLORS.red },
+                                    ...(activeSource !== "installation" ? [{ label: copy.negativeLabel, color: COLORS.red }] : []),
                                     { label: "Days quota met (combined)", color: COLORS.forest },
                                 ]}
                             />

@@ -8,8 +8,6 @@ import { RepeatMachinesTable } from "../tables/RepeatMachinesTable";
 import { Pagination } from "../ui/Pagination";
 import { Segmented } from "../ui/Segmented";
 
-type VisitSource = EngineerSource | "installation";
-
 const th = "px-4 py-2.5 text-left text-xs font-medium text-muted";
 const td = "px-4 py-2.5 align-top";
 
@@ -23,16 +21,16 @@ export function EngineerVisits({
     month: string; // "YYYY-MM", taken from the panel's month dropdown
 }) {
     const { token } = useAuth();
-    const [source, setSource] = useState<VisitSource>("service");
+    const [source, setSource] = useState<EngineerSource>("service");
     const [page, setPage] = useState(1);
 
     useEffect(() => setPage(1), [source, month]);
 
-    const apiSource: EngineerSource = source === "pm" ? "pm" : "service";
+    const apiSource: EngineerSource = source;
     const { data, isLoading, isError, error } = useQuery({
         queryKey: ["engineerVisits", engCode, apiSource, month, page],
         queryFn: () => getEngineerVisits(token!, engCode, apiSource, month, page),
-        enabled: !!token && source !== "installation",
+        enabled: !!token,
         placeholderData: keepPreviousData,
         retry: false,
     });
@@ -53,14 +51,14 @@ export function EngineerVisits({
                         Engineer: <span className="font-medium text-ink">{shownName || "—"}</span> · Code {shownCode}
                     </p>
                 </div>
-                <Segmented<VisitSource>
+                <Segmented<EngineerSource>
                     label="Visit table"
                     value={source}
                     onChange={setSource}
                     options={[
                         { value: "service", label: "Service" },
                         { value: "pm", label: "PM" },
-                        { value: "installation", label: "Installation (soon)", disabled: true },
+                        { value: "installation", label: "Installation" },
                     ]}
                 />
             </div>
@@ -130,10 +128,45 @@ export function EngineerVisits({
                 </div>
             )}
 
-            {source === "installation" && (
-                <p className="rounded-xl bg-gray-50 p-4 text-sm text-muted">
-                    Installation visits will appear here once the Installation Report dataset is added.
-                </p>
+            {data?.source === "installation" && source === "installation" && (
+                <div className="overflow-hidden rounded-xl border border-border">
+                    <div className="max-h-[300px] overflow-auto">
+                        <table className="w-full text-sm">
+                            <thead className="sticky top-0 z-10 bg-[#F6F8F7]">
+                                <tr>
+                                    <th className={th}>Machine S/N</th>
+                                    <th className={th}>Dealer</th>
+                                    <th className={th}>Model</th>
+                                    <th className={th}>Date</th>
+                                    <th className={th}>Loc / Up</th>
+                                    <th className={th}>Location</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {data.rows.length === 0 && (
+                                    <tr><td colSpan={6} className="p-6 text-center text-muted">No installations for this engineer this month</td></tr>
+                                )}
+                                {data.rows.map((r, i) => (
+                                    <tr key={`${r.machine_no}-${i}`} className="border-t border-border">
+                                        <td className={`${td} whitespace-nowrap font-medium`}>{r.machine_no}</td>
+                                        <td className={td}>
+                                            <div>{r.dealer_name}</div>
+                                            <div className="text-xs text-muted">{r.dealer_code}</div>
+                                        </td>
+                                        <td className={td}>{r.master_model || "—"}</td>
+                                        <td className={`${td} whitespace-nowrap`}>{r.install_date}</td>
+                                        <td className={td}>{r.loc_up_rem || "—"}</td>
+                                        <td className={td}>
+                                            <div>{r.location}</div>
+                                            <div className="text-xs text-muted">{r.state}</div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    <Pagination page={data.page} pageSize={data.pageSize} totalRows={data.totalRows} noun="installations" onPageChange={setPage} />
+                </div>
             )}
         </div>
     );
