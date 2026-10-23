@@ -3,6 +3,7 @@ from collections import Counter
 import pandas as pd
 
 from .rules import classify as _tier, norm
+from .overrides_store import get_overrides
 
 DONE, DISPUTE = "PM Done", "Dispute"
 FILLER = {"the","is","are","was","were","and","of","in","to","at","by","on","for","with","a","an","it",
@@ -32,7 +33,7 @@ def label_text(text, learned):
     return None, "unresolved"
 
 
-def apply_outcomes(df, learned):
+def apply_outcomes(df, learned, overrides=None):
     if "remarks" not in df.columns:
         return df
     df = df.copy()
@@ -40,6 +41,18 @@ def apply_outcomes(df, learned):
     res = df["remarks"].fillna("").astype(str).map(uniq)
     df["pm_resolved"] = res.map(lambda r: r[0] is not None)
     df["pm_outcome"] = res.map(lambda r: r[0] or DISPUTE)
+    df["pm_overridden"] = False
+
+    if overrides is None:
+        overrides = get_overrides()
+    if overrides and "ticket_no" in df.columns and "company" in df.columns:
+        keys = zip(df["company"].astype(str), df["ticket_no"].astype(str).str.strip())
+        ov = pd.Series([overrides.get(k) for k in keys], index=df.index)
+        has = ov.notna()
+        df.loc[has, "pm_outcome"] = ov[has]
+        df.loc[has, "pm_resolved"] = True
+        df.loc[has, "pm_overridden"] = True
+
     df["is_closed"] = df["pm_outcome"] == DONE
     return df
 
@@ -130,3 +143,45 @@ def list_remarks(df, learned, status="all", search="", page=1, page_size=25):
         "pageSize": page_size,
         "counts": summary,
     }
+
+
+def _remark_mask(df, key):
+    raw = df["remarks"].fillna("").astype(str)
+    uniq = {x: norm(x) for x in raw.unique()}
+    return raw.map(uniq) == key
+
+
+def tickets_for_remark(df, key):
+    """Every (company, ticket_no) whose remark normalises to `key`."""
+    if "remarks" not in df.columns or not key:
+        return []
+    m = df[_remark_mask(df, key)]
+    pairs = zip(m["company"].astype(str), m["ticket_no"].astype(str).str.strip())
+    return list(dict.fromkeys(pairs))
+
+
+def rows_for_remark(df, learned, key, page=1, page_size=25):
+    empty = {"rows": [], "total": 0, "page": page, "pageSize": page_size,
+             "counts": {"done": 0, "dispute": 0, "overridden": 0}}
+    if "remarks" not in df.columns or not key:
+        return empty
+    m = df[_remark_mask(df, key)]
+    if m.empty:
+        return empty
+    m = apply_outcomes(m, learned).sort_values("call_date", ascending=False)
+    counts = {
+        "done": int((m["pm_outcome"] == DONE).sum()),
+        "dispute": int((m["pm_outcome"] == DISPUTE).sum()),
+        "overridden": int(m["pm_overridden"].sum()),
+    }
+    start = (page - 1) * page_size
+    sl = m.iloc[start:start + page_size]
+    cols = [c for c in ("company", "ticket_no", "dealer_code", "dealer_name", "call_date", "remarks") if c in sl.columns]
+    out = sl[cols].copy()
+    out["call_date"] = out["call_date"].dt.strftime("%Y-%m-%d")
+    out["remarks"] = out["remarks"].fillna("").astype(str).str.slice(0, 300)
+    out["outcome"] = sl["pm_outcome"]
+    out["overridden"] = sl["pm_overridden"].astype(bool)
+    out = out.fillna("")
+    return {"rows": out.to_dict("records"), "total": len(m), "page": page,
+            "pageSize": page_size, "counts": counts}

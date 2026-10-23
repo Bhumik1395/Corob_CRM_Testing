@@ -6,7 +6,7 @@ import { useAuth } from "../../auth/AuthContext";
 import { PmTrendChart } from "../../components/charts/PmTrendChart";
 import { PdfViewerModal } from "../../components/PdfViewerModal";
 import { PmDashboardSkeleton } from "../../components/skeletons/Pmdashboardskeleton";
-import { PmRuleQuiz } from "../../components/PmRuleQuiz";
+import { PmRemarkReview } from "../../components/PmRemarkReview";
 import { PmRuleHistory } from "../../components/PmRuleHistory";
 import { Card } from "../../components/ui/Card";
 import { KpiCard } from "../../components/ui/KpiCard";
@@ -211,7 +211,7 @@ export default function PmDashboard() {
                 <>
                     {isEmployee && (
                         <div>
-                            <PmRuleQuiz token={token!} company={activeCompany!} />
+                            <PmRemarkReview token={token!} company={activeCompany!} />
                             <PmRuleHistory token={token!} company={activeCompany!} />
                         </div>
                     )}

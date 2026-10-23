@@ -81,6 +81,7 @@ export interface FilterOptions {
     machines: string[];
     statuses: string[];
     serviceTypes: string[];
+    hasBlankServiceType?: boolean;
     years: string[];
 }
 

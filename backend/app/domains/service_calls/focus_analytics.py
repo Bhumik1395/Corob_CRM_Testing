@@ -33,7 +33,9 @@ def compute_focus(
 
     if "service_type" in filtered.columns:
         filtered = filtered[filtered["service_type"] != "Gdata"]
-        if service_type:
+        if service_type == "__blank__":
+            filtered = filtered[filtered["service_type"] == ""]
+        elif service_type:
             filtered = filtered[filtered["service_type"] == service_type]
 
     total_calls = len(filtered)

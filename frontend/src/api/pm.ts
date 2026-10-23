@@ -314,3 +314,47 @@ export async function getReviewRemarks(
     const res = await fetch(`${API_BASE}/api/pm/review/remarks?${params}`, { headers: authHeaders(token) });
     return handle<RemarkListResponse>(res);
 }
+
+export interface RemarkTicketRow {
+    company: string;
+    ticket_no: string;
+    dealer_code: string;
+    dealer_name: string;
+    call_date: string;
+    remarks: string;
+    outcome: "PM Done" | "Dispute";
+    overridden: boolean;
+}
+
+export interface RemarkRowsResponse {
+    rows: RemarkTicketRow[];
+    total: number;
+    page: number;
+    pageSize: number;
+    counts: { done: number; dispute: number; overridden: number };
+}
+
+export async function getRemarkRows(token: string, company: string | undefined, key: string, page = 1, pageSize = 25) {
+    const params = new URLSearchParams({ key, page: String(page), page_size: String(pageSize) });
+    if (company) params.set("company", company);
+    const res = await fetch(`${API_BASE}/api/pm/review/rows?${params}`, { headers: authHeaders(token) });
+    return handle<RemarkRowsResponse>(res);
+}
+
+export async function markRemarkRows(
+    token: string,
+    body: {
+        company?: string;
+        remark_key: string;
+        label: "PM Done" | "Dispute" | null;
+        tickets?: { company: string; ticket_no: string }[];
+        all_rows?: boolean;
+    }
+) {
+    const res = await fetch(`${API_BASE}/api/pm/review/rows/mark`, {
+        method: "POST",
+        headers: { ...authHeaders(token), "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    return handle<{ updated: number }>(res);
+}

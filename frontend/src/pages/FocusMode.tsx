@@ -157,8 +157,10 @@ export default function FocusMode() {
                     onChange={(e) => updateFilter("service_type", e.target.value)}
                 >
                     <option value="">All Service Types</option>
-                    <option value="Service">Service</option>
-                    <option value="Other">Other</option>
+                    {filterOptions?.serviceTypes?.map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                    ))}
+                    {filterOptions?.hasBlankServiceType && <option value="__blank__">Not specified</option>}
                 </Select>
                 <Select
                     className="w-32"
