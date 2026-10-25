@@ -3,6 +3,7 @@ import pandas as pd
 
 from app.core.auth import CurrentUser, require_roles
 from app.core.upload_limits import read_capped
+from app.core.rate_limit import rate_limit
 from app.domains.pm.validation import validate_pm_excel, ValidationError
 from app.domains.pm.excel_service import process_pm_dataframe
 from app.domains.pm.cache import save_pm_data, delete_pm_data, delete_all_pm_data
@@ -12,7 +13,7 @@ router = APIRouter()
 MAX_FILES = 10
 
 
-@router.post("/api/pm/upload")
+@router.post("/api/pm/upload", dependencies=[Depends(rate_limit("upload", 10, 600))])
 def upload_pm_data(
     files: list[UploadFile] = File(...),
     user: CurrentUser = Depends(require_roles("customer", "corob_employee")),

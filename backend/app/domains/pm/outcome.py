@@ -1,5 +1,6 @@
 import re
 from collections import Counter
+from functools import lru_cache
 import pandas as pd
 
 from .rules import classify as _tier, norm
@@ -20,6 +21,11 @@ def _match_learned(t, learned):
 
 
 def label_text(text, learned):
+    return _label_text(text, tuple(learned))
+
+
+@lru_cache(maxsize=200_000)
+def _label_text(text, learned):
     t = norm(text)
     for p, l in learned:
         if p == t:
@@ -37,6 +43,7 @@ def apply_outcomes(df, learned, overrides=None):
     if "remarks" not in df.columns:
         return df
     df = df.copy()
+    learned = tuple(learned)
     uniq = {x: label_text(x, learned) for x in df["remarks"].fillna("").astype(str).unique()}
     res = df["remarks"].fillna("").astype(str).map(uniq)
     df["pm_resolved"] = res.map(lambda r: r[0] is not None)

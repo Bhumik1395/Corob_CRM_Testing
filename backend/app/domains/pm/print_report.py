@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 
 from app.core.auth import CurrentUser, require_roles
+from app.core.rate_limit import rate_limit
 from app.domains.pm.cache import load_pm_frame
 from app.domains.pm.common import resolve_company
 from app.domains.pm.outcome import apply_outcomes
@@ -47,7 +48,7 @@ def print_options(company: str | None = None, user: CurrentUser = Depends(any_us
     }
 
 
-@router.get("/api/pm/print/pdf")
+@router.get("/api/pm/print/pdf", dependencies=[Depends(rate_limit("pdf", 20, 60))])
 def print_pdf(
     year: int,
     month: int,

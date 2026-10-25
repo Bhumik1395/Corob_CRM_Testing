@@ -8,6 +8,7 @@ from fastapi.responses import Response
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app.core.auth import CurrentUser, require_roles
+from app.core.rate_limit import rate_limit
 from app.domains.pm.cache import load_pm_frame
 from app.domains.pm.common import resolve_company
 from app.domains.pm.outcome import apply_outcomes
@@ -116,14 +117,12 @@ def build_ticket_context(row: pd.Series) -> dict:
     }
 
 
-@router.get("/api/pm/ticket/pdf")
+@router.get("/api/pm/ticket/pdf", dependencies=[Depends(rate_limit("pdf", 20, 60))])
 def ticket_pdf(
     ticket_no: str,
     company: str | None = None,
     user: CurrentUser = Depends(any_user),
 ):
-    # Customers are pinned to their own company by resolve_company, so they can
-    # never fetch another company's ticket by guessing a ticket number.
     resolved = resolve_company(user, company, allow_all=True)
     df = load_pm_frame(resolved)
     if df is None:

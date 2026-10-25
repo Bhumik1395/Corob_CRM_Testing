@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 import io
 import pandas as pd
+from app.core.rate_limit import rate_limit
 from app.domains.service_calls.session_auth import get_authorized_session_df
 from app.domains.service_calls.focus_analytics import compute_focus
 from app.domains.service_calls.chart_render import render_bar_chart
@@ -18,7 +19,7 @@ def _format_period(min_date, max_date) -> str:
     return f"{min_date.strftime('%b %Y')} - {max_date.strftime('%b %Y')}"
 
 
-@router.post("/api/reports/pdf")
+@router.post("/api/reports/pdf", dependencies=[Depends(rate_limit("pdf", 20, 60))])
 def create_report(customer: str = None, df: pd.DataFrame = Depends(get_authorized_session_df)):
     filtered_df = df[df["customer"] == customer] if customer else df
     period_str = _format_period(filtered_df["call_date"].min(), filtered_df["call_date"].max())

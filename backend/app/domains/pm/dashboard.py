@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 
 from app.core.auth import CurrentUser, require_roles
+from app.core.rate_limit import rate_limit
 from app.domains.pm.cache import load_pm_frame
 from app.domains.pm.analytics import compute_pm_dashboard, compute_pm_filter_options
 from app.domains.pm.common import ALL_COMPANIES, resolve_company
@@ -21,7 +22,7 @@ def _frame_or_404(company: str):
     return df
 
 
-@router.get("/api/pm/dashboard")
+@router.get("/api/pm/dashboard", dependencies=[Depends(rate_limit("pm_dashboard", 120, 60))])
 def pm_dashboard(
     company: str | None = None,
     year: int | None = None,

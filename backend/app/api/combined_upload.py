@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 from app.core.auth import CurrentUser, require_roles
 from app.core.config import SESSION_TTL_SECONDS
 from app.core.upload_limits import read_capped
+from app.core.rate_limit import rate_limit
 from app.domains.installation.cache import relink_installation_engineers, save_installation_data
 from app.domains.installation.excel_service import (
     ValidationError as InstallValidationError,
@@ -43,7 +44,7 @@ def _sheet_names(file_bytes: bytes) -> set[str]:
         workbook.close()
 
 
-@router.post("/api/upload/combined")
+@router.post("/api/upload/combined", dependencies=[Depends(rate_limit("upload", 10, 600))])
 def upload_combined(
     request: Request,
     response: Response,

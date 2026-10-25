@@ -24,6 +24,7 @@ CREATE TABLE users (
 
 CREATE TABLE service_call_sessions (
     session_id   CHAR(36) PRIMARY KEY,
+    owner_sub    VARCHAR(64) NOT NULL DEFAULT '',
     payload      LONGBLOB NOT NULL,
     expires_at   DATETIME NOT NULL,
     created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
