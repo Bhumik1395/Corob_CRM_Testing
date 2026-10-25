@@ -1,4 +1,3 @@
-import io
 import uuid
 from datetime import datetime, timedelta
 
@@ -7,12 +6,13 @@ import pymysql
 
 from app.core.config import SESSION_TTL_SECONDS
 from app.core.db import get_connection
+from app.shared.blob_store import dumps, loads
 
-REFRESH_AFTER_SECONDS = 300  # only extend the TTL if it was last extended 5+ min ago
-
+REFRESH_AFTER_SECONDS = 300
 
 def create_session(df: pd.DataFrame, owner_sub: str, old_session_id: str | None = None) -> str:
     session_id = str(uuid.uuid4())
+    payload = dumps(df)
     buf = io.BytesIO()
     df.to_pickle(buf, compression="gzip")
     expires_at = datetime.utcnow() + timedelta(seconds=SESSION_TTL_SECONDS)
@@ -24,7 +24,7 @@ def create_session(df: pd.DataFrame, owner_sub: str, old_session_id: str | None 
                 cur.execute("DELETE FROM service_call_sessions WHERE session_id = %s", (old_session_id,))
             cur.execute(
                 "INSERT INTO service_call_sessions (session_id, owner_sub, payload, expires_at) VALUES (%s, %s, %s, %s)",
-                (session_id, owner_sub, buf.getvalue(), expires_at),
+                (session_id, owner_sub, payload, expires_at),
             )
     return session_id
 
@@ -51,7 +51,7 @@ def get_session_data(session_id: str, owner_sub: str) -> pd.DataFrame:
                 except pymysql.err.OperationalError:
                     pass
 
-    return pd.read_pickle(io.BytesIO(row["payload"]), compression="gzip")
+    return loads(row["payload"])
 
 
 def delete_session(session_id: str) -> None:

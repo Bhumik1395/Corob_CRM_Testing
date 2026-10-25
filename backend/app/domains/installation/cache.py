@@ -6,6 +6,7 @@ import pandas as pd
 
 from app.core.auth_config import PM_DATA_TTL_SECONDS
 from app.core.db import get_connection
+from app.shared.blob_store import dumps, loads
 from app.shared.engineer_resolver import resolve_engineers
 
 log = logging.getLogger(__name__)
@@ -21,17 +22,16 @@ def get_installation_data() -> pd.DataFrame | None:
             "UPDATE installation_data SET expires_at = %s WHERE id = 1",
             (datetime.utcnow() + timedelta(seconds=PM_DATA_TTL_SECONDS),),
         )
-    return pd.read_pickle(io.BytesIO(row["payload"]), compression="gzip")
+        return loads(row["payload"])
 
 
 def _write(df: pd.DataFrame) -> None:
-    buf = io.BytesIO()
-    df.to_pickle(buf, compression="gzip")
+    payload = dumps(df)
     with get_connection() as conn, conn.cursor() as cur:
         cur.execute(
             """INSERT INTO installation_data (id, payload, expires_at) VALUES (1, %s, %s)
                ON DUPLICATE KEY UPDATE payload = VALUES(payload), expires_at = VALUES(expires_at)""",
-            (buf.getvalue(), datetime.utcnow() + timedelta(seconds=PM_DATA_TTL_SECONDS)),
+            (payload, datetime.utcnow() + timedelta(seconds=PM_DATA_TTL_SECONDS)),
         )
 
 

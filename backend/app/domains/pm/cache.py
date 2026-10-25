@@ -1,4 +1,3 @@
-import io
 import re
 from datetime import datetime, timedelta
 
@@ -8,6 +7,7 @@ from app.core.auth_config import PM_DATA_TTL_SECONDS
 from app.core.db import get_connection
 from app.domains.pm.common import ALL_COMPANIES, resolve_company
 from app.domains.pm.excel_service import dedupe_pm_rows
+from app.shared.blob_store import dumps, loads
 
 
 def _slug(company: str) -> str:
@@ -31,7 +31,7 @@ def get_pm_data(company: str) -> pd.DataFrame | None:
                 (new_expiry, slug),
             )
 
-    return pd.read_pickle(io.BytesIO(row["payload"]), compression="gzip")
+    return loads(row["payload"])
 
 
 def get_all_pm_data() -> pd.DataFrame | None:
@@ -49,7 +49,7 @@ def get_all_pm_data() -> pd.DataFrame | None:
                 (new_expiry,),
             )
 
-    frames = [pd.read_pickle(io.BytesIO(r["payload"]), compression="gzip") for r in rows]
+    frames = [loads(r["payload"]) for r in rows]
     return pd.concat(frames, ignore_index=True)
 
 
@@ -61,15 +61,11 @@ def load_pm_frame(company: str) -> pd.DataFrame | None:
 
 
 def save_pm_data(company: str, df: pd.DataFrame) -> int:
-    """Merge `df` (freshly-uploaded rows) into whatever is already stored for
-    this company, dedupe by ticket_no (new rows win), and persist. Returns
-    the resulting row count."""
     existing = get_pm_data(company)
     combined = pd.concat([existing, df], ignore_index=True) if existing is not None else df
     combined = dedupe_pm_rows(combined)
 
-    buf = io.BytesIO()
-    combined.to_pickle(buf, compression="gzip")
+    payload = dumps(combined)
     slug = _slug(company)
     expires_at = datetime.utcnow() + timedelta(seconds=PM_DATA_TTL_SECONDS)
 
@@ -82,7 +78,7 @@ def save_pm_data(company: str, df: pd.DataFrame) -> int:
                        company_name = VALUES(company_name),
                        payload = VALUES(payload),
                        expires_at = VALUES(expires_at)""",
-                (slug, company, buf.getvalue(), expires_at),
+                (slug, company, payload, expires_at),
             )
     return len(combined)
 
