@@ -50,6 +50,12 @@ def find_user(cur, email: str):
     cur.execute("SELECT id, is_active FROM users WHERE email = %s", (email,))
     return cur.fetchone()
 
+def _clear_lockouts(cur, email: str):
+    key = f"email:{email[:150]}"
+    cur.execute(
+        "DELETE FROM login_attempts WHERE device_ip_key = %s OR LEFT(device_ip_key, %s) = %s",
+        (key, len(key) + 1, key + ":"),
+    )
 
 
 def cmd_add(a):
@@ -106,7 +112,7 @@ def cmd_passwd(a):
             die(f"no user {email}")
         pw = prompt_password()
         cur.execute("UPDATE users SET password_hash = %s WHERE email = %s", (hash_pw(pw), email))
-        cur.execute("DELETE FROM login_attempts WHERE device_ip_key = %s", (f"email:{email}",))
+        _clear_lockouts(cur, email)
     print(f"password updated for {email}")
 
 
@@ -129,7 +135,7 @@ def cmd_activate(a):
 def cmd_unlock(a):
     email = norm_email(a.email)
     with get_connection() as conn, conn.cursor() as cur:
-        cur.execute("DELETE FROM login_attempts WHERE device_ip_key = %s", (f"email:{email}",))
+        _clear_lockouts(cur, email)
     print(f"lockout cleared for {email}")
 
 

@@ -32,17 +32,17 @@ def login(body: LoginRequest, request: Request, response: Response):
         ip = _client_ip(request)
 
         enforce_not_locked_out(device_id, ip)
-        enforce_account_not_locked(body.email)
+        enforce_account_not_locked(body.email, ip)
 
         try:
             token = authenticate(body.email, body.password)
         except HTTPException:
             record_failed_attempt(device_id, ip)
-            record_account_failure(body.email)
+            record_account_failure(body.email, ip)
             raise
 
         clear_attempts(device_id, ip)
-        clear_account_failures(body.email)
+        clear_account_failures(body.email, ip)
         return {"access_token": token}
     except pymysql.err.MySQLError:
         log.exception("Database error during login")

@@ -1,0 +1,14 @@
+[Unit]
+Description=Corob Service Analytics - purge expired data
+After=mysql.service
+
+[Service]
+Type=oneshot
+User=www-data
+WorkingDirectory=/var/www/corob-analytics/backend
+EnvironmentFile=/var/www/corob-analytics/backend/.env
+ExecStart=/usr/bin/python3 scripts/purge_expired.py
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+PrivateTmp=true

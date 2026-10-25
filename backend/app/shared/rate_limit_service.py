@@ -17,7 +17,8 @@ MAX_ATTEMPTS = 5
 WINDOW_SECONDS = 15 * 60
 LOCKOUT_SECONDS = 30 * 60
 
-ACCOUNT_MAX_ATTEMPTS = 8
+ACCOUNT_MAX_ATTEMPTS = 8             
+ACCOUNT_GLOBAL_MAX_ATTEMPTS = 50    
 ACCOUNT_WINDOW_SECONDS = 15 * 60
 ACCOUNT_LOCKOUT_SECONDS = 15 * 60
 
@@ -123,13 +124,13 @@ def clear_attempts(device_id: str, ip: str) -> None:
     _clear(_device_key(device_id, ip))
 
 
+def _account_key(email: str, ip: str | None = None) -> str:
+    key = f"email:{email.strip().lower()[:150]}"
+    return key if ip is None else f"{key}:{ip}"
 
-def _account_key(email: str) -> str:
-    return f"email:{email.strip().lower()}"
 
-
-def enforce_account_not_locked(email: str) -> None:
-    remaining = _is_locked(_account_key(email))
+def enforce_account_not_locked(email: str, ip: str) -> None:
+    remaining = max(_is_locked(_account_key(email, ip)), _is_locked(_account_key(email)))
     if remaining:
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
@@ -141,9 +142,11 @@ def enforce_account_not_locked(email: str) -> None:
         )
 
 
-def record_account_failure(email: str) -> None:
-    _record_failure(_account_key(email), ACCOUNT_MAX_ATTEMPTS, ACCOUNT_WINDOW_SECONDS, ACCOUNT_LOCKOUT_SECONDS)
+def record_account_failure(email: str, ip: str) -> None:
+    _record_failure(_account_key(email, ip), ACCOUNT_MAX_ATTEMPTS, ACCOUNT_WINDOW_SECONDS, ACCOUNT_LOCKOUT_SECONDS)
+    _record_failure(_account_key(email), ACCOUNT_GLOBAL_MAX_ATTEMPTS, ACCOUNT_WINDOW_SECONDS, ACCOUNT_LOCKOUT_SECONDS)
 
 
-def clear_account_failures(email: str) -> None:
+def clear_account_failures(email: str, ip: str) -> None:
+    _clear(_account_key(email, ip))
     _clear(_account_key(email))
