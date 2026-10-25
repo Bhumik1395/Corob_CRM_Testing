@@ -17,7 +17,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
-JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", str(60 * 10)))
+JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", str(60 * 15)))
 
 @dataclass
 class CurrentUser:
@@ -46,10 +46,6 @@ def _issue_token(user_row: dict) -> str:
         "exp": now + JWT_TTL_SECONDS,
     }
     return jwt.encode(claims, JWT_SECRET, algorithm=JWT_ALGORITHM)
-
-
-
-
 
 
 _DUMMY_HASH = bcrypt.hashpw(b"not-a-real-password-just-for-timing", bcrypt.gensalt()).decode("utf-8")
@@ -86,14 +82,21 @@ def _decode_token(token: str) -> dict:
     except JWTError as exc:
         raise HTTPException(401, {"error": "invalid_token", "message": str(exc)}) from exc
 
+def reissue_token(user: "CurrentUser") -> str:
+    return _issue_token({"id": user.sub, "email": user.username, "role": user.roles[0], "company_name": user.company})
 
-async def get_current_user(
+def get_current_user(
     creds: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> CurrentUser:
     if creds is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, {"error": "missing_token"})
 
     claims = _decode_token(creds.credentials)
+    with get_connection() as conn, conn.cursor() as cur:
+        cur.execute("SELECT is_active FROM users WHERE id = %s", (claims["sub"],))
+        row = cur.fetchone()
+    if row is None or not row["is_active"]:
+        raise HTTPException(401, {"error": "account_disabled", "message": "This account is disabled."})
     return CurrentUser(
         sub=claims["sub"],
         username=claims["email"],

@@ -18,12 +18,12 @@ router = APIRouter()
 SOURCES = ("service", "pm", "installation")
 
 
-def _service_df_or_none(request: Request):
+def _service_df_or_none(request: Request, sub: str):
     session_id = request.cookies.get("session_id")
     if not session_id:
         return None
     try:
-        return get_session_data(session_id)
+        return get_session_data(session_id, sub)
     except KeyError:
         return None
 
@@ -39,12 +39,12 @@ def _installation_df_or_none():
     return prepare_installation(get_installation_data())
 
 
-def _load_df(request: Request, source: str):
+def _load_df(request: Request, source: str, sub: str):
     if source not in SOURCES:
         raise HTTPException(400, {"error": "bad_source", "message": f"source must be one of {', '.join(SOURCES)}."})
 
     if source == "service":
-        df = _service_df_or_none(request)
+        df = _service_df_or_none(request, sub)
         if df is None:
             raise HTTPException(401, {"error": "session_expired", "message": "Upload a Service Calls file first."})
         return df
@@ -68,7 +68,7 @@ def engineer_monthly(
     source: str = "service",
     user: CurrentUser = Depends(require_roles("corob_employee")),
 ):
-    return compute_engineer_monthly(_load_df(request, source), eng_code, source)
+    return compute_engineer_monthly(_load_df(request, source, user.sub), eng_code, source)
 
 
 @router.get("/api/engineers/utilization")
@@ -78,7 +78,7 @@ def engineer_utilization(
     user: CurrentUser = Depends(require_roles("corob_employee")),
 ):
     """Quota days / utilization: each source checked on its own, any one meeting it counts."""
-    service_df = _service_df_or_none(request)
+    service_df = _service_df_or_none(request, user.sub)
     pm_df = _pm_df_or_none()
     installation_df = _installation_df_or_none()
     if service_df is None and pm_df is None and installation_df is None:
@@ -96,4 +96,4 @@ def engineer_visits(
     page_size: int = 50,
     user: CurrentUser = Depends(require_roles("corob_employee")),
 ):
-    return compute_engineer_visits(_load_df(request, source), eng_code, source, page, page_size, month)
+    return compute_engineer_visits(_load_df(request, source, user.sub), eng_code, source, page, page_size, month)

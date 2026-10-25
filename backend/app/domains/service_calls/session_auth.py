@@ -13,6 +13,6 @@ def get_authorized_session_df(
     if not session_id:
         raise HTTPException(401, {"error": "session_expired"})
     try:
-        return get_session_data(session_id)
+        return get_session_data(session_id, user.sub)
     except KeyError:
         raise HTTPException(401, {"error": "session_expired"})

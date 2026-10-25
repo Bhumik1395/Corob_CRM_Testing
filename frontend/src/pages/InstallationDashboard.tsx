@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Search } from "lucide-react";
 import { getInstallationDashboard, getInstallationFilters } from "../api/installation";
 import type { InstallationDashboardResponse, InstallationDetailRow } from "../api/installation";
 import { useAuth } from "../auth/AuthContext";
+import { RegionLocationChart } from "../components/charts/RegionLocationChart";
 import { SimpleBarChart } from "../components/charts/SimpleBarChart";
 import { Card } from "../components/ui/Card";
 import { KpiCard } from "../components/ui/KpiCard";
@@ -13,10 +14,9 @@ import { Segmented } from "../components/ui/Segmented";
 import { Select } from "../components/ui/Select";
 import { SkeletonCard, SkeletonPanel } from "../components/Skeleton";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
-import { formatMonthShort, monthName } from "../lib/format";
-import { COLORS } from "../lib/palette";
+import { formatMonthShort } from "../lib/format";
 
-type Panel = "zones" | "dealers";
+type Panel = "location" | "regions";
 
 const th = "px-4 py-2.5 text-left text-xs font-medium text-muted";
 const td = "px-4 py-2.5";
@@ -49,12 +49,12 @@ function ZoneTable({ zones }: { zones: InstallationDashboardResponse["zoneBreakd
         });
 
     return (
-        <div className="max-h-[340px] overflow-auto">
+        <div className="max-h-[250px] overflow-auto">
             <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-[#F6F8F7]">
                     <tr>
                         <th className={`${th} w-10`} aria-label="Expand" />
-                        <th className={th}>Zone / State</th>
+                        <th className={th}>Region / State</th>
                         <th className={th}>Installations</th>
                         <th className={th}>Local</th>
                         <th className={th}>Upcountry</th>
@@ -97,7 +97,7 @@ function ZoneTable({ zones }: { zones: InstallationDashboardResponse["zoneBreakd
 export default function InstallationDashboard() {
     const { token } = useAuth();
     const [filters, setFilters] = useState<Record<string, string>>({});
-    const [panel, setPanel] = useState<Panel>("zones");
+    const [panel, setPanel] = useState<Panel>("location");
     const [page, setPage] = useState(1);
     const [searchInput, setSearchInput] = useState("");
     const search = useDebouncedValue(searchInput, 400);
@@ -136,6 +136,16 @@ export default function InstallationDashboard() {
         [data]
     );
 
+    const locationByRegion = useMemo(
+        () =>
+            (data?.zoneBreakdown ?? []).map((z) => ({
+                region: z.zone,
+                Local: z.local,
+                Upcountry: z.upcountry,
+            })),
+        [data]
+    );
+
     const noData = isError && (error as any)?.error === "no_data";
 
     return (
@@ -145,35 +155,13 @@ export default function InstallationDashboard() {
                     <option value="">All Companies</option>
                     {options?.companies.map((c) => <option key={c} value={c}>{c}</option>)}
                 </Select>
-                <Select className="w-36" aria-label="Zone" value={filters.zone ?? ""} onChange={(e) => updateFilter("zone", e.target.value)}>
-                    <option value="">All Zones</option>
-                    {options?.zones.map((z) => <option key={z} value={z}>{z}</option>)}
-                </Select>
                 <Select className="w-44" aria-label="State" value={filters.state ?? ""} onChange={(e) => updateFilter("state", e.target.value)}>
                     <option value="">All States</option>
                     {options?.states.map((s) => <option key={s} value={s}>{s}</option>)}
                 </Select>
-                <Select className="w-40" aria-label="Master model" value={filters.model ?? ""} onChange={(e) => updateFilter("model", e.target.value)}>
-                    <option value="">All Models</option>
-                    {options?.models.map((m) => <option key={m} value={m}>{m}</option>)}
-                </Select>
-                <Select className="w-40" aria-label="Local or upcountry" value={filters.loc_up_rem ?? ""} onChange={(e) => updateFilter("loc_up_rem", e.target.value)}>
-                    <option value="">Local / Upcountry</option>
-                    {options?.locTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-                </Select>
-                <Select className="w-52" aria-label="Supervisor" value={filters.supervisor ?? ""} onChange={(e) => updateFilter("supervisor", e.target.value)}>
-                    <option value="">All Supervisors</option>
-                    {options?.supervisors.map((s) => <option key={s} value={s}>{s}</option>)}
-                </Select>
                 <Select className="w-28" aria-label="Year" value={filters.year ?? ""} onChange={(e) => updateFilter("year", e.target.value)}>
                     <option value="">All Years</option>
                     {options?.years.map((y) => <option key={y} value={y}>{y}</option>)}
-                </Select>
-                <Select className="w-36" aria-label="Month" value={filters.month ?? ""} onChange={(e) => updateFilter("month", e.target.value)}>
-                    <option value="">All Months</option>
-                    {Array.from({ length: 12 }, (_, i) => (
-                        <option key={i + 1} value={i + 1}>{monthName(String(i + 1))}</option>
-                    ))}
                 </Select>
                 {isFetching && !isLoading && <span className="text-xs text-muted">Updating…</span>}
             </div>
@@ -220,74 +208,35 @@ export default function InstallationDashboard() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
-                        <Card className="col-span-2" title="Installations per month">
-                            <SimpleBarChart data={trend} xKey="label" yKey="count" height={230} showTooltip={false} />
+                    <div className="grid grid-cols-5 gap-4">
+                        <Card className="col-span-3" title="Installations per month">
+                            <SimpleBarChart data={trend} xKey="label" yKey="count" height={250} showTooltip={false} />
                         </Card>
-                        <Card title="Local vs upcountry">
-                            <SimpleBarChart data={data.locSplit} xKey="name" yKey="count" height={230} showTooltip={false} />
+
+                        <Card
+                            className="col-span-2"
+                            title={panel === "location" ? "Local vs upcountry by region" : "Region-wise breakdown"}
+                            bodyClassName="mt-3 border-t border-border"
+                            actions={
+                                <Segmented<Panel>
+                                    label="Breakdown view"
+                                    value={panel}
+                                    onChange={setPanel}
+                                    options={[
+                                        { value: "location", label: "Location" },
+                                        { value: "regions", label: "Regions" },
+                                    ]}
+                                />
+                            }
+                        >
+                            {panel === "location" && (
+                                <div className="px-5 py-4">
+                                    <RegionLocationChart data={locationByRegion} height={210} />
+                                </div>
+                            )}
+                            {panel === "regions" && <ZoneTable zones={data.zoneBreakdown} />}
                         </Card>
                     </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                        <Card title="By company" subtitle="Top 10">
-                            <SimpleBarChart horizontal data={data.byCompany} xKey="name" yKey="count" height={300} showTooltip={false} />
-                        </Card>
-                        <Card title="By master model" subtitle="Top 10">
-                            <SimpleBarChart horizontal color={COLORS.forest} data={data.byModel} xKey="name" yKey="count" height={300} showTooltip={false} />
-                        </Card>
-                        <Card title="UPS model" subtitle="Top 8">
-                            <SimpleBarChart horizontal color={COLORS.lime} data={data.upsModels} xKey="name" yKey="count" height={300} showTooltip={false} />
-                        </Card>
-                    </div>
-
-                    <Card
-                        title={panel === "zones" ? "Zone-wise breakdown" : "Top dealers"}
-                        bodyClassName="mt-3 border-t border-border"
-                        actions={
-                            <Segmented<Panel>
-                                label="Breakdown view"
-                                value={panel}
-                                onChange={setPanel}
-                                options={[
-                                    { value: "zones", label: "Zones" },
-                                    { value: "dealers", label: "Dealers" },
-                                ]}
-                            />
-                        }
-                    >
-                        {panel === "zones" && <ZoneTable zones={data.zoneBreakdown} />}
-
-                        {panel === "dealers" && (
-                            <div className="max-h-[340px] overflow-auto">
-                                <table className="w-full text-sm">
-                                    <thead className="sticky top-0 z-10 bg-[#F6F8F7]">
-                                        <tr>
-                                            <th className={th}>Dealer code</th>
-                                            <th className={th}>Dealer name</th>
-                                            <th className={th}>Company</th>
-                                            <th className={th}>State</th>
-                                            <th className={th}>Installs</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {data.topDealers.length === 0 && (
-                                            <tr><td colSpan={5} className="p-6 text-center text-muted">No dealers for the current filters</td></tr>
-                                        )}
-                                        {data.topDealers.map((d) => (
-                                            <tr key={d.dealer_code} className="border-t border-border hover:bg-gray-50">
-                                                <td className={`${td} whitespace-nowrap font-medium`}>{d.dealer_code}</td>
-                                                <td className={td}>{d.dealer_name}</td>
-                                                <td className={td}>{d.company}</td>
-                                                <td className={td}>{d.state}</td>
-                                                <td className={`${td} tabular-nums`}>{d.count.toLocaleString()}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </Card>
 
                     <Card
                         title="Installation detail"

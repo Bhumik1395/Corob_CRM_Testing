@@ -1,10 +1,10 @@
 import logging
 
 import pymysql
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
 
-from app.core.auth import authenticate
+from app.core.auth import CurrentUser, authenticate, get_current_user, reissue_token
 from app.shared.rate_limit_service import (
     enforce_not_locked_out,
     get_or_set_device_id,
@@ -50,3 +50,8 @@ def login(body: LoginRequest, request: Request, response: Response):
             "error": "db_unavailable",
             "message": "The database is unavailable. Please try again shortly.",
         })
+
+@router.post("/api/auth/refresh")
+def refresh(user: CurrentUser = Depends(get_current_user)):
+    """'Stay signed in'. get_current_user already rejects expired tokens and deactivated users."""
+    return {"access_token": reissue_token(user)}

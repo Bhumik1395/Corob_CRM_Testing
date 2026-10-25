@@ -12,6 +12,13 @@ export interface InstallationKpis {
 
 export type InstallationCount = { name: string; count: number };
 
+export interface InstallationMonthRow {
+    year_month: string;
+    count: number;
+    local: number;
+    upcountry: number;
+}
+
 export interface InstallationSplit {
     total: number;
     local: number;
@@ -54,7 +61,7 @@ export interface InstallationDetailRow {
 
 export interface InstallationDashboardResponse {
     kpis: InstallationKpis;
-    monthlyTrend: { year_month: string; count: number }[];
+    monthlyTrend: InstallationMonthRow[];
     byCompany: InstallationCount[];
     byModel: InstallationCount[];
     locSplit: InstallationCount[];

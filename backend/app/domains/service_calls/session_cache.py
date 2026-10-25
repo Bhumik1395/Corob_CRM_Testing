@@ -11,7 +11,7 @@ from app.core.db import get_connection
 REFRESH_AFTER_SECONDS = 300  # only extend the TTL if it was last extended 5+ min ago
 
 
-def create_session(df: pd.DataFrame, old_session_id: str | None = None) -> str:
+def create_session(df: pd.DataFrame, owner_sub: str, old_session_id: str | None = None) -> str:
     session_id = str(uuid.uuid4())
     buf = io.BytesIO()
     df.to_pickle(buf, compression="gzip")
@@ -23,25 +23,24 @@ def create_session(df: pd.DataFrame, old_session_id: str | None = None) -> str:
             if old_session_id:
                 cur.execute("DELETE FROM service_call_sessions WHERE session_id = %s", (old_session_id,))
             cur.execute(
-                "INSERT INTO service_call_sessions (session_id, payload, expires_at) VALUES (%s, %s, %s)",
-                (session_id, buf.getvalue(), expires_at),
+                "INSERT INTO service_call_sessions (session_id, owner_sub, payload, expires_at) VALUES (%s, %s, %s, %s)",
+                (session_id, owner_sub, buf.getvalue(), expires_at),
             )
     return session_id
 
 
-def get_session_data(session_id: str) -> pd.DataFrame:
+def get_session_data(session_id: str, owner_sub: str) -> pd.DataFrame:
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 "SELECT payload, expires_at FROM service_call_sessions "
-                "WHERE session_id = %s AND expires_at > UTC_TIMESTAMP()",
-                (session_id,),
+                "WHERE session_id = %s AND owner_sub = %s AND expires_at > UTC_TIMESTAMP()",
+                (session_id, owner_sub),
             )
             row = cur.fetchone()
             if row is None:
                 raise KeyError("session_expired")
 
-            # Sliding TTL, but only write occasionally and never fail the request over it
             remaining = (row["expires_at"] - datetime.utcnow()).total_seconds()
             if remaining < SESSION_TTL_SECONDS - REFRESH_AFTER_SECONDS:
                 try:
