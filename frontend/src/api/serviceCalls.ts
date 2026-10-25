@@ -181,8 +181,13 @@ export function uploadCombined(
     });
 }
 
+// Same localStorage key AuthContext writes; export it from there if it ever moves.
+const authHeaders = (): HeadersInit => ({
+    Authorization: `Bearer ${localStorage.getItem("corob_token") ?? ""}`,
+});
+
 export async function getFilterOptions(): Promise<FilterOptions> {
-    const res = await fetch(`${API_BASE}/api/filters`, { credentials: "include" });
+    const res = await fetch(`${API_BASE}/api/filters`, { credentials: "include", headers: authHeaders() });
     if (res.status === 401) throw { error: "session_expired" };
     if (!res.ok) throw await res.json();
     return res.json();
@@ -196,6 +201,7 @@ export async function getFocusDashboard(
     const params = new URLSearchParams({ ...filters, page: String(page), page_size: String(pageSize) });
     const res = await fetch(`${API_BASE}/api/dashboard/focus?${params}`, {
         credentials: "include",
+        headers: authHeaders(),
     });
     if (res.status === 401) throw { error: "session_expired" };
     if (!res.ok) throw await res.json();
@@ -212,6 +218,7 @@ export async function getEmployeeDashboard(
 
     const res = await fetch(`${API_BASE}/api/dashboard/employees?${params}`, {
         credentials: "include",
+        headers: authHeaders(),
     });
     if (res.status === 401) throw { error: "session_expired" };
     if (!res.ok) throw await res.json();
@@ -230,6 +237,7 @@ export async function getUtilizationDashboard(
 
     const res = await fetch(`${API_BASE}/api/dashboard/utilization?${params}`, {
         credentials: "include",
+        headers: authHeaders(),
     });
     if (res.status === 401) throw { error: "session_expired" };
     if (!res.ok) throw await res.json();
@@ -243,6 +251,7 @@ export async function downloadPdfReport(customer?: string): Promise<void> {
     const res = await fetch(`${API_BASE}/api/reports/pdf?${params}`, {
         method: "POST",
         credentials: "include",
+        headers: authHeaders(),
     });
     if (res.status === 401) throw { error: "session_expired" };
     if (!res.ok) throw await res.json();

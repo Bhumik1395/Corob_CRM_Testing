@@ -14,6 +14,7 @@ interface AuthContextValue {
     token: string | null;
     signIn: (email: string, password: string) => Promise<string | null>;
     logout: () => void;
+    refresh: () => Promise<boolean>;
     authError: string | null;
 }
 
@@ -92,6 +93,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearIdentity();
     }, [clearIdentity]);
 
+    const refresh = useCallback(async (): Promise<boolean> => {
+        const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${localStorage.getItem(TOKEN_STORAGE_KEY) ?? ""}` },
+        }).catch(() => null);
+        if (!res?.ok) {
+            clearIdentity();
+            return false;
+        }
+        const { access_token } = await res.json();
+        setToken(access_token);
+        localStorage.setItem(TOKEN_STORAGE_KEY, access_token);
+        return true;
+    }, [clearIdentity]);
+
     const value: AuthContextValue = {
         initialized,
         authenticated: !!token,
@@ -101,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         token,
         signIn,
         logout,
+        refresh,
         authError,
     };
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import pandas as pd
 
 from app.core.auth import CurrentUser, require_roles
+from app.core.upload_limits import read_capped
 from app.domains.pm.validation import validate_pm_excel, ValidationError
 from app.domains.pm.excel_service import process_pm_dataframe
 from app.domains.pm.cache import save_pm_data, delete_pm_data, delete_all_pm_data
@@ -30,7 +31,7 @@ def upload_pm_data(
                 "error": "unsupported_format",
                 "message": f"'{f.filename}' is not a .xlsx file.",
             })
-        contents = f.file.read()
+        contents = read_capped(f)
         try:
             raw_df = validate_pm_excel(contents, f.filename)
         except ValidationError as e:

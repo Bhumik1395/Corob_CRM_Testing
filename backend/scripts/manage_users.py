@@ -1,23 +1,3 @@
-
-"""User administration for Corob Service Analytics. Run ON THE SERVER.
-
-    cd backend
-    set -a && source .env && set +a          # loads the MySQL settings
-    python scripts/manage_users.py <command> ...
-
-Commands
-    add            --email E --role customer|corob_employee [--company "Name"]
-    list
-    passwd         --email E                      reset a password
-    deactivate     --email E                      block login (keeps the record)
-    activate       --email E
-    unlock         --email E                      clear a "too many attempts" lockout
-    add-company    --name "Name" --domain example.com
-    list-companies
-
-Passwords are typed at a hidden prompt, never on the command line, so they don't
-end up in shell history or `ps`. They're stored as bcrypt hashes only.
-"""
 from __future__ import annotations
 
 import argparse
@@ -136,9 +116,7 @@ def _set_active(email_raw: str, active: bool):
         if not find_user(cur, email):
             die(f"no user {email}")
         cur.execute("UPDATE users SET is_active = %s WHERE email = %s", (active, email))
-    print(f"{email} is now {'active' if active else 'DEACTIVATED'}"
-          + ("" if active else " (an existing login token stays valid until it expires)"))
-
+    print(f"{email} is now {'active' if active else 'DEACTIVATED'}")
 
 def cmd_deactivate(a):
     _set_active(a.email, False)

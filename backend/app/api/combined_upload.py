@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 
 from app.core.auth import CurrentUser, require_roles
 from app.core.config import SESSION_TTL_SECONDS
+from app.core.upload_limits import read_capped
 from app.domains.installation.cache import relink_installation_engineers, save_installation_data
 from app.domains.installation.excel_service import (
     ValidationError as InstallValidationError,
@@ -76,7 +77,7 @@ def upload_combined(
                            f"Please upload a valid .xlsx file.",
             })
 
-        contents = f.file.read()
+        contents = read_capped(f)
 
         try:
             sheets = _sheet_names(contents)
@@ -86,8 +87,6 @@ def upload_combined(
                 "message": f"'{f.filename}' could not be read. Please make sure it's a valid .xlsx file.",
             })
 
-        # If a file somehow has both sheet names, it's treated as a Service
-        # Calls file. Not expected in practice with real exports.
         if SCHEMA_CONTRACT["sheet_name"] in sheets:
             try:
                 df = validate_excel(contents)
@@ -146,6 +145,7 @@ def upload_combined(
         combined_service = pd.concat(service_frames, ignore_index=True)
         session_id = create_session(
             combined_service,
+            user.sub,
             old_session_id=request.cookies.get("session_id"),
         )
         response.set_cookie(

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 import io
 import pandas as pd
-from app.domains.service_calls.session_cache import get_session_data
+from app.domains.service_calls.session_auth import get_authorized_session_df
 from app.domains.service_calls.focus_analytics import compute_focus
 from app.domains.service_calls.chart_render import render_bar_chart
 from app.domains.service_calls.pdf_service import generate_pdf
@@ -19,16 +19,7 @@ def _format_period(min_date, max_date) -> str:
 
 
 @router.post("/api/reports/pdf")
-def create_report(request: Request, customer: str = None):
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        raise HTTPException(401, {"error": "session_expired"})
-
-    try:
-        df = get_session_data(session_id)
-    except KeyError:
-        raise HTTPException(401, {"error": "session_expired"})
-
+def create_report(customer: str = None, df: pd.DataFrame = Depends(get_authorized_session_df)):
     filtered_df = df[df["customer"] == customer] if customer else df
     period_str = _format_period(filtered_df["call_date"].min(), filtered_df["call_date"].max())
 

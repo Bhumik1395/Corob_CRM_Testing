@@ -19,6 +19,7 @@ export default function CustomerDashboardShell() {
 
     const handleSignOut = async () => {
         setSigningOut(true);
+        await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/session`, { method: "DELETE", credentials: "include" }).catch(() => { });
         try {
             await deleteAllPmData(token!);
         } catch {

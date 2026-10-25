@@ -6,7 +6,7 @@ const SESSION_DURATION_MS = 10 * 60 * 1000;
 const PROMPT_DURATION_MS = 30 * 1000;
 
 export default function SessionTimeoutGuard() {
-    const { authenticated, token, roles, logout } = useAuth();
+    const { authenticated, token, roles, logout, refresh } = useAuth();
     const [showPrompt, setShowPrompt] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(PROMPT_DURATION_MS / 1000);
 
@@ -71,8 +71,8 @@ export default function SessionTimeoutGuard() {
         return clearAllTimers;
     }, [authenticated]);
 
-    const handleStayLoggedIn = () => {
-        startSessionTimer();
+    const handleStayLoggedIn = async () => {
+        if (await refresh()) startSessionTimer();
     };
 
     if (!authenticated || !showPrompt) return null;

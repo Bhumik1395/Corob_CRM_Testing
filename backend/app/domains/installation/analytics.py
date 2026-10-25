@@ -113,10 +113,18 @@ def compute_installation_dashboard(
         "upcountryPct": round(d["is_upcountry"].mean() * 100, 1),
     }
 
+    # Month-on-month trend, split into local / upcountry (Remote already folded into Upcountry).
     monthly = (
         d.dropna(subset=["year_month"])
-        .groupby("year_month").size().reset_index(name="count").sort_values("year_month")
-    ).to_dict("records")
+        .groupby("year_month")
+        .agg(count=("machine_no", "size"),
+             local=("is_local", "sum"),
+             upcountry=("is_upcountry", "sum"))
+        .reset_index()
+        .sort_values("year_month")
+    )
+    monthly[["count", "local", "upcountry"]] = monthly[["count", "local", "upcountry"]].astype(int)
+    monthly = monthly.to_dict("records")
 
     loc_split = [
         {"name": k, "count": int(v)}
