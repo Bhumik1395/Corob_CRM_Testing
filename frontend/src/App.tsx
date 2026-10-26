@@ -25,7 +25,7 @@ export default function App() {
         <QueryClientProvider client={queryClient}>
             <AuthProvider>
                 <SessionTimeoutGuard />
-                {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_AGENTATION === "true") && <Agentation />}
+                {import.meta.env.DEV && <Agentation />}
                 <Routes>
                     <Route path="/login" element={<Login />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />

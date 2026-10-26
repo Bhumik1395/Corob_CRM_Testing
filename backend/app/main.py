@@ -34,7 +34,13 @@ if "*" in _extra_hosts:
 else:
     ALLOWED_HOSTS = list({_origin_host, "localhost", "127.0.0.1", *_extra_hosts})
 
-app = FastAPI(title="Corob Service Analytics API")
+_docs = os.getenv("ENABLE_DOCS") == "1"
+app = FastAPI(
+    title="Corob Service Analytics API",
+    docs_url="/docs" if _docs else None,
+    redoc_url=None,
+    openapi_url="/openapi.json" if _docs else None,
+)
 
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
 app.add_middleware(SecurityHeadersMiddleware)

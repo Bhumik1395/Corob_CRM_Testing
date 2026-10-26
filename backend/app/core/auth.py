@@ -4,18 +4,19 @@ import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-
+import jwt                     
+from jwt import PyJWTError 
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt
-from jose.exceptions import JWTError
 
 from app.core.db import get_connection
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
 JWT_SECRET = os.environ["JWT_SECRET"]
+if len(JWT_SECRET) < 32:
+    raise RuntimeError("JWT_SECRET must be at least 32 characters")
 JWT_ALGORITHM = "HS256"
 JWT_TTL_SECONDS = int(os.getenv("JWT_TTL_SECONDS", str(60 * 15)))
 

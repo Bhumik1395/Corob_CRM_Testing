@@ -13,8 +13,6 @@ REFRESH_AFTER_SECONDS = 300
 def create_session(df: pd.DataFrame, owner_sub: str, old_session_id: str | None = None) -> str:
     session_id = str(uuid.uuid4())
     payload = dumps(df)
-    buf = io.BytesIO()
-    df.to_pickle(buf, compression="gzip")
     expires_at = datetime.utcnow() + timedelta(seconds=SESSION_TTL_SECONDS)
 
     with get_connection() as conn:

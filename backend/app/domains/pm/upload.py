@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 import pandas as pd
-
+from app.core.audit import audit
 from app.core.auth import CurrentUser, require_roles
 from app.core.upload_limits import read_capped
 from app.core.rate_limit import rate_limit
@@ -63,6 +63,8 @@ def upload_pm_data(
 
     saved = {company: save_pm_data(company, group) for company, group in companies_touched.items()}
 
+    audit(user.username, "pm_upload", f"{len(files)} files, {sum(r['row_count'] for r in per_file_results)} rows")
+    
     return {
         "files": per_file_results,
         "companies": [{"company": c, "total_rows_stored": n} for c, n in saved.items()],
@@ -78,8 +80,10 @@ def end_pm_session(
     Corob employees may pass ?company=__all__ to wipe every company."""
     if user.is_corob_employee and company == ALL_COMPANIES:
         count = delete_all_pm_data()
+        audit(user.username, "pm_delete", ALL_COMPANIES)
         return {"company": ALL_COMPANIES, "deleted": count > 0}
 
     resolved_company = resolve_company(user, company)
     had_data = delete_pm_data(resolved_company)
+    audit(user.username, "pm_delete", resolved_company)
     return {"company": resolved_company, "deleted": had_data}

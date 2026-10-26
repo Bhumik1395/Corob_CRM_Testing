@@ -9,17 +9,8 @@ env = Environment(
 )
 
 
-def _data_uri_only_fetcher(url: str):
-    """WeasyPrint calls this for every resource (images, @font-face, CSS
-    url()...) it encounters. Refusing everything except data: URIs means a
-    malicious/attacker-controlled string in the rendered HTML cannot cause
-    an outbound request to internal services, cloud metadata endpoints, or
-    anywhere else."""
-    if not url.startswith("data:"):
-        raise ValueError(f"Blocked non-data: URL during PDF rendering: {url[:80]}")
-    from weasyprint.urls import default_url_fetcher
-    return default_url_fetcher(url)
-
+from weasyprint.urls import URLFetcher
+_data_uri_only_fetcher = URLFetcher(allowed_protocols={"data"})
 
 def generate_pdf(kpis: dict, state_breakdown: list, charts: dict, report_title: str, period_str: str) -> bytes:
     from weasyprint import HTML

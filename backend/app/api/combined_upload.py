@@ -4,7 +4,7 @@ import logging
 import openpyxl
 import pandas as pd
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile
-
+from app.core.audit import audit
 from app.core.auth import CurrentUser, require_roles
 from app.core.config import SESSION_TTL_SECONDS
 from app.core.upload_limits import read_capped
@@ -154,7 +154,7 @@ def upload_combined(
             value=session_id,
             httponly=True,
             secure=True,
-            samesite="none",
+            samesite="lax",
             max_age=SESSION_TTL_SECONDS,
         )
         result["serviceCalls"] = {
@@ -188,4 +188,5 @@ def upload_combined(
         except Exception:
             log.exception("Could not re-link installation engineers")
 
+    audit(user.username, "combined_upload", f"{len(files)} files")
     return result

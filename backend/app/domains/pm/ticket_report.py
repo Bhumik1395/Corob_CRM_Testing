@@ -1,4 +1,5 @@
 import logging
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -147,7 +148,7 @@ def ticket_pdf(
     from weasyprint import HTML
     pdf = HTML(string=html, url_fetcher=_data_uri_only_fetcher).write_pdf()
 
-    safe = ctx["ticket_no"].replace("/", "_")
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", ctx["ticket_no"])
     return Response(
         content=pdf,
         media_type="application/pdf",

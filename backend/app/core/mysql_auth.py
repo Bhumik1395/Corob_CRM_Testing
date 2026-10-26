@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 import bcrypt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import jwt
-from jose.exceptions import JWTError
+import jwt                     
+from jwt import PyJWTError
 
 from app.core.db import get_connection
 

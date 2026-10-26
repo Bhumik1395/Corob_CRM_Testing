@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-
+from app.core.audit import audit
 from app.core.auth import CurrentUser, require_roles
 from app.domains.installation.analytics import (
     compute_installation_dashboard,
@@ -52,4 +52,6 @@ def installation_filters(user: CurrentUser = Depends(employee_only)):
 
 @router.delete("/api/installation/data")
 def installation_delete(user: CurrentUser = Depends(employee_only)):
-    return {"deleted": delete_installation_data()}
+    deleted = delete_installation_data()
+    audit(user.username, "installation_delete")
+    return {"deleted": deleted} 

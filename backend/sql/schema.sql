@@ -40,6 +40,15 @@ CREATE TABLE pm_data (
     INDEX idx_expires (expires_at)
 );
 
+CREATE TABLE audit_log (
+    id      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actor   VARCHAR(255) NOT NULL,
+    action  VARCHAR(64) NOT NULL,
+    detail  VARCHAR(500) NOT NULL DEFAULT '',
+    INDEX idx_at (at)
+);
+
 CREATE TABLE login_attempts (
     device_ip_key VARCHAR(255) PRIMARY KEY,
     attempts      INT NOT NULL DEFAULT 0,

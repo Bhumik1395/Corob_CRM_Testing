@@ -47,7 +47,7 @@ def get_or_set_device_id(request: Request, response: Response) -> str:
             value=device_id,
             httponly=True,
             secure=True,
-            samesite="none",
+            samesite="lax",
             max_age=DEVICE_COOKIE_MAX_AGE,
         )
     return device_id

@@ -3,7 +3,7 @@ import logging
 import pymysql
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel
-
+from app.core.audit import audit
 from app.core.auth import CurrentUser, authenticate, get_current_user, reissue_token
 from app.shared.rate_limit_service import (
     enforce_not_locked_out,
@@ -39,10 +39,12 @@ def login(body: LoginRequest, request: Request, response: Response):
         except HTTPException:
             record_failed_attempt(device_id, ip)
             record_account_failure(body.email, ip)
+            audit(body.email, "login_failed", ip)
             raise
 
         clear_attempts(device_id, ip)
         clear_account_failures(body.email, ip)
+        audit(body.email, "login_success", ip)
         return {"access_token": token}
     except pymysql.err.MySQLError:
         log.exception("Database error during login")

@@ -11,7 +11,9 @@ def get_pool() -> PooledDB:
         ssl_kwargs = {}
         if os.getenv("MYSQL_SSL", "").lower() in ("1", "true", "yes"):
             ca = os.getenv("MYSQL_SSL_CA")
-            ssl_kwargs["ssl"] = {"ca": ca} if ca else {"check_hostname": False}
+            if not ca:
+                raise RuntimeError("MYSQL_SSL is on but MYSQL_SSL_CA is not set: refusing an unverified TLS connection")
+            ssl_kwargs["ssl"] = {"ca": ca}
 
         _pool = PooledDB(
             creator=pymysql,

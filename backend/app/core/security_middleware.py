@@ -10,10 +10,12 @@ SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 class CsrfOriginCheckMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, allowed_origin: str):
         super().__init__(app)
-        self.allowed_host = urlparse(allowed_origin).netloc if allowed_origin else None
+        self.allowed_host = urlparse(allowed_origin).netloc
+        if not self.allowed_host:
+            raise RuntimeError("ALLOWED_ORIGIN must be a full origin like https://host: empty would disable the CSRF check")
 
     async def dispatch(self, request: Request, call_next):
-        if request.method not in SAFE_METHODS and self.allowed_host:
+        if request.method not in SAFE_METHODS:
             origin = request.headers.get("origin") or request.headers.get("referer")
             origin_host = urlparse(origin).netloc if origin else None
             if origin_host != self.allowed_host:
@@ -33,4 +35,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+        if request.url.path.startswith("/api/"):
+            response.headers["Cache-Control"] = "no-store"
         return response
