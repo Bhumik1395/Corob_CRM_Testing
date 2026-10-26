@@ -169,7 +169,7 @@ export default function InstallationDashboard() {
             {isLoading && (
                 <div className="flex flex-col gap-4">
                     <div className="grid grid-cols-5 gap-4">
-                        {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+                        <SkeletonCard />
                     </div>
                     <SkeletonPanel height={240} />
                     <SkeletonPanel height={300} />
@@ -198,14 +198,6 @@ export default function InstallationDashboard() {
                 <>
                     <div className="grid grid-cols-5 gap-4">
                         <KpiCard tone="green" label="Installations" value={data.kpis.totalInstallations.toLocaleString()} />
-                        <KpiCard label="Companies" value={data.kpis.companies.toLocaleString()} />
-                        <KpiCard label="Dealers" value={data.kpis.dealers.toLocaleString()} />
-                        <KpiCard label="Engineers" value={data.kpis.engineers.toLocaleString()} />
-                        <KpiCard
-                            label="With UPS recorded"
-                            value={`${data.kpis.upsAttachPct}%`}
-                            caption={`${data.kpis.upcountryPct}% upcountry`}
-                        />
                     </div>
 
                     <div className="grid grid-cols-5 gap-4">
