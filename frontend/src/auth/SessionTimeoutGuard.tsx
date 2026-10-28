@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { deleteAllPmData } from "../api/pm";
 
 const SESSION_DURATION_MS = 10 * 60 * 1000;
 const PROMPT_DURATION_MS = 30 * 1000;
 
 export default function SessionTimeoutGuard() {
-    const { authenticated, token, roles, logout, refresh } = useAuth();
+    const { authenticated, logout, refresh } = useAuth();
     const [showPrompt, setShowPrompt] = useState(false);
     const [secondsLeft, setSecondsLeft] = useState(PROMPT_DURATION_MS / 1000);
 
@@ -14,33 +13,10 @@ export default function SessionTimeoutGuard() {
     const countdownIntervalRef = useRef<number | null>(null);
     const logoutTimerRef = useRef<number | null>(null);
 
-    const tokenRef = useRef(token);
-    const rolesRef = useRef(roles);
-    tokenRef.current = token;
-    rolesRef.current = roles;
-
     const clearAllTimers = () => {
         if (sessionTimerRef.current) window.clearTimeout(sessionTimerRef.current);
         if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
         if (logoutTimerRef.current) window.clearTimeout(logoutTimerRef.current);
-    };
-
-    const signOutForInactivity = async () => {
-        if (tokenRef.current) {
-            try {
-                const isEmployee = rolesRef.current.includes("corob_employee");
-                await deleteAllPmData(tokenRef.current, isEmployee ? "__all__" : undefined);
-            } catch {
-            }
-        }
-        try {
-            await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/session`, {
-                method: "DELETE",
-                credentials: "include",
-            });
-        } catch {
-        }
-        logout();
     };
 
     const startSessionTimer = () => {
@@ -56,7 +32,7 @@ export default function SessionTimeoutGuard() {
             }, 1000);
 
             logoutTimerRef.current = window.setTimeout(() => {
-                void signOutForInactivity();
+                logout();
             }, PROMPT_DURATION_MS);
         }, SESSION_DURATION_MS);
     };

@@ -184,16 +184,6 @@ export async function getCompanies(token: string): Promise<{ companies: string[]
     return handle<{ companies: string[] }>(res);
 }
 
-export async function deleteAllPmData(token: string, company?: string): Promise<{ company: string; deleted: boolean }> {
-    const params = new URLSearchParams();
-    if (company) params.set("company", company);
-    const res = await fetch(`${API_BASE}/api/pm/data?${params}`, {
-        method: "DELETE",
-        headers: authHeaders(token),
-    });
-    return handle(res);
-}
-
 export function pmPdfUrl(ticketNo: string): string {
     const safeName = ticketNo.replace(/\//g, "_");
     return `/pm-pdfs/${encodeURIComponent(safeName)}.pdf`;

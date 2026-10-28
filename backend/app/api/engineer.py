@@ -66,7 +66,7 @@ def engineer_monthly(
     request: Request,
     eng_code: str,
     source: str = "service",
-    user: CurrentUser = Depends(require_roles("corob_employee")),
+    user: CurrentUser = Depends(require_roles("corob_employee", "admin")),
 ):
     return compute_engineer_monthly(_load_df(request, source, user.sub), eng_code, source)
 
@@ -75,7 +75,7 @@ def engineer_monthly(
 def engineer_utilization(
     request: Request,
     eng_code: str,
-    user: CurrentUser = Depends(require_roles("corob_employee")),
+    user: CurrentUser = Depends(require_roles("corob_employee", "admin")),
 ):
     """Quota days / utilization: each source checked on its own, any one meeting it counts."""
     service_df = _service_df_or_none(request, user.sub)
@@ -94,6 +94,6 @@ def engineer_visits(
     month: str = "",
     page: int = 1,
     page_size: int = 50,
-    user: CurrentUser = Depends(require_roles("corob_employee")),
+    user: CurrentUser = Depends(require_roles("corob_employee", "admin")),
 ):
     return compute_engineer_visits(_load_df(request, source, user.sub), eng_code, source, page, page_size, month)

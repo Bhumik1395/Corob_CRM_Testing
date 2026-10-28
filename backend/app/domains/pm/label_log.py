@@ -26,7 +26,7 @@ def log_label(event: str, user: str, label: str | None, **fields) -> None:
         LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
         line = json.dumps(record, ensure_ascii=False) + "\n"
         # O_APPEND keeps lines intact across the 2 uvicorn workers
-        fd = os.open(LOG_PATH, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o640)
+        fd = os.open(LOG_PATH, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
         try:
             os.write(fd, line.encode("utf-8"))
         finally:

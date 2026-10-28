@@ -18,9 +18,9 @@ def resolve_company(user: CurrentUser, company_param: str | None, allow_all: boo
 
 
 def load_pm_df(user: CurrentUser, company_param: str | None):
-    """One company's PM data, or - for Corob employees only - ?company=__all__ for every company combined."""
+    """One company's PM data, or - for Corob employees/admins - ?company=__all__ for every company combined."""
     from app.domains.pm.cache import get_all_pm_data, get_pm_data
 
-    if user.is_corob_employee and company_param == ALL_COMPANIES:
+    if (user.is_corob_employee or user.is_admin) and company_param == ALL_COMPANIES:
         return get_all_pm_data()
     return get_pm_data(resolve_company(user, company_param))

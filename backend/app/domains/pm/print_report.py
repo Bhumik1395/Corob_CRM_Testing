@@ -10,7 +10,7 @@ from app.domains.pm.rules_store import get_learned_rules
 from app.domains.pm.print_pdf import build_report_pdf
 
 router = APIRouter()
-any_user = require_roles("customer", "corob_employee")
+any_user = require_roles("customer", "corob_employee", "admin")
 
 UNKNOWN = "Unknown model"
 TABLE_COLS = ["ticket_no", "dealer_code", "dealer_name", "machine_no", "call_date", "call_closure_address", "region", "state"]

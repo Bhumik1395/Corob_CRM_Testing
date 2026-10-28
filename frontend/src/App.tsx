@@ -30,10 +30,11 @@ export default function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
 
+                    {/* Employee dashboard — no upload route */}
                     <Route
                         path="/dashboard"
                         element={
-                            <ProtectedRoute allowedRoles={["corob_employee"]}>
+                            <ProtectedRoute allowedRoles={["corob_employee", "admin"]}>
                                 <DashboardShell />
                             </ProtectedRoute>
                         }
@@ -43,22 +44,45 @@ export default function App() {
                         <Route path="pm" element={<PmDashboard />} />
                         <Route path="utilization" element={<EngineerUtilization />} />
                         <Route path="installation" element={<InstallationDashboard />} />
-                        <Route path="upload" element={<UploadPage />} />
                         <Route path="pm/print" element={<PmPrintPage />} />
                     </Route>
 
+                    {/* Admin-only upload route */}
+                    <Route
+                        path="/dashboard/upload"
+                        element={
+                            <ProtectedRoute allowedRoles={["admin"]}>
+                                <DashboardShell />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<UploadPage />} />
+                    </Route>
+
+                    {/* Customer dashboard — no upload route */}
                     <Route
                         path="/customer"
                         element={
-                            <ProtectedRoute allowedRoles={["customer", "corob_employee"]}>
+                            <ProtectedRoute allowedRoles={["customer"]}>
                                 <CustomerDashboardShell />
                             </ProtectedRoute>
                         }
                     >
                         <Route index element={<Navigate to="pm" replace />} />
                         <Route path="pm" element={<PmDashboard />} />
-                        <Route path="pm/upload" element={<PmUploadPage />} />
                         <Route path="pm/print" element={<PmPrintPage />} />
+                    </Route>
+
+                    {/* Admin PM upload */}
+                    <Route
+                        path="/admin/upload"
+                        element={
+                            <ProtectedRoute allowedRoles={["admin"]}>
+                                <DashboardShell />
+                            </ProtectedRoute>
+                        }
+                    >
+                        <Route index element={<PmUploadPage />} />
                     </Route>
 
                     <Route path="*" element={<Navigate to="/login" replace />} />

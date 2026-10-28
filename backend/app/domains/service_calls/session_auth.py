@@ -7,7 +7,7 @@ from app.domains.service_calls.session_cache import get_session_data
 
 def get_authorized_session_df(
     request: Request,
-    user: CurrentUser = Depends(require_roles("corob_employee")),
+    user: CurrentUser = Depends(require_roles("corob_employee", "admin")),
 ) -> pd.DataFrame:
     session_id = request.cookies.get("session_id")
     if not session_id:

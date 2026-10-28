@@ -8,7 +8,7 @@ from app.domains.installation.analytics import (
 from app.domains.installation.cache import delete_installation_data, get_installation_data
 
 router = APIRouter()
-employee_only = require_roles("corob_employee")
+employee_only = require_roles("corob_employee", "admin")
 
 
 def _frame_or_404():

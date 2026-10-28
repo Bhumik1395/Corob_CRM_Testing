@@ -34,7 +34,7 @@ def pm_dashboard(
     detail_month: str | None = None,
     page: int = 1,
     page_size: int = 50,
-    user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
+    user: CurrentUser = Depends(require_roles("customer", "corob_employee", "admin")),
 ):
     resolved_company = resolve_company(user, company, allow_all=True)
     df = _frame_or_404(resolved_company)
@@ -57,7 +57,7 @@ def pm_dashboard(
 def pm_filters(
     company: str | None = None,
     year: int | None = None,
-    user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
+    user: CurrentUser = Depends(require_roles("customer", "corob_employee", "admin")),
 ):
     resolved_company = resolve_company(user, company, allow_all=True)
     df = _frame_or_404(resolved_company)

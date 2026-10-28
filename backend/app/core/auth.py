@@ -32,6 +32,10 @@ class CurrentUser:
         return "corob_employee" in self.roles
 
     @property
+    def is_admin(self) -> bool:
+        return "admin" in self.roles
+
+    @property
     def is_customer(self) -> bool:
         return "customer" in self.roles
 

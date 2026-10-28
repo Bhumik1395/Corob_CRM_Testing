@@ -10,7 +10,7 @@ from app.domains.pm.cache import load_pm_df
 from app.domains.pm.label_log import log_label
 
 router = APIRouter()
-employee_only = require_roles("corob_employee")
+employee_only = require_roles("corob_employee", "admin")
 
 
 class Answer(BaseModel):

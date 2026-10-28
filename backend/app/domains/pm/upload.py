@@ -6,7 +6,7 @@ from app.core.upload_limits import read_capped
 from app.core.rate_limit import rate_limit
 from app.domains.pm.validation import validate_pm_excel, ValidationError
 from app.domains.pm.excel_service import process_pm_dataframe
-from app.domains.pm.cache import save_pm_data, delete_pm_data, delete_all_pm_data
+from app.domains.pm.cache import save_pm_data
 from app.domains.pm.common import resolve_company, ALL_COMPANIES
 
 router = APIRouter()
@@ -16,7 +16,7 @@ MAX_FILES = 10
 @router.post("/api/pm/upload", dependencies=[Depends(rate_limit("upload", 10, 600))])
 def upload_pm_data(
     files: list[UploadFile] = File(...),
-    user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
+    user: CurrentUser = Depends(require_roles("customer", "corob_employee", "admin")),
 ):
     if not files:
         raise HTTPException(400, {"error": "no_files", "message": "No files were uploaded."})
@@ -69,21 +69,3 @@ def upload_pm_data(
         "files": per_file_results,
         "companies": [{"company": c, "total_rows_stored": n} for c, n in saved.items()],
     }
-
-
-@router.delete("/api/pm/data")
-def end_pm_session(
-    company: str | None = None,
-    user: CurrentUser = Depends(require_roles("customer", "corob_employee")),
-):
-    """Deletes stored PM data. Customers can only ever target their own company.
-    Corob employees may pass ?company=__all__ to wipe every company."""
-    if user.is_corob_employee and company == ALL_COMPANIES:
-        count = delete_all_pm_data()
-        audit(user.username, "pm_delete", ALL_COMPANIES)
-        return {"company": ALL_COMPANIES, "deleted": count > 0}
-
-    resolved_company = resolve_company(user, company)
-    had_data = delete_pm_data(resolved_company)
-    audit(user.username, "pm_delete", resolved_company)
-    return {"company": resolved_company, "deleted": had_data}

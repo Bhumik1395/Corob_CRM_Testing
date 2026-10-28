@@ -15,7 +15,7 @@ CREATE TABLE users (
     id             INT AUTO_INCREMENT PRIMARY KEY,
     email          VARCHAR(255) NOT NULL UNIQUE,
     password_hash  VARCHAR(255) NOT NULL,
-    role           ENUM('customer', 'corob_employee') NOT NULL,
+    role           ENUM('customer', 'corob_employee', 'admin') NOT NULL,
     company_id     INT NULL,
     is_active      BOOLEAN NOT NULL DEFAULT TRUE,
     created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
