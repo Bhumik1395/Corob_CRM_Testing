@@ -131,6 +131,7 @@ function RemarkRows({ token, company, remarkKey, showCompany }: {
                             <th className="text-left p-2">Ticket</th>
                             <th className="text-left p-2">Dealer</th>
                             <th className="text-left p-2">Date</th>
+                            <th className="text-left p-2">Remark</th>
                             <th className="text-left p-2">Current</th>
                             <th className="p-2 w-44"></th>
                         </tr>
@@ -152,6 +153,7 @@ function RemarkRows({ token, company, remarkKey, showCompany }: {
                                     <span className="block text-xs text-gray-400">{r.dealer_code}</span>
                                 </td>
                                 <td className="p-2 whitespace-nowrap">{r.call_date}</td>
+                                <td className="p-2 min-w-[220px] break-words text-xs text-gray-700">{r.remarks || "—"}</td>
                                 <td className="p-2 text-xs">
                                     {r.outcome}
                                     {r.overridden && <span className="block text-gray-400">set manually</span>}

@@ -7,6 +7,7 @@ from app.domains.pm.outcome import (next_question, count_matches, list_remarks,
 from app.domains.pm.overrides_store import set_overrides, clear_overrides
 from app.domains.pm.rules_store import (get_learned_rules, save_rule, list_history, set_label, set_active)
 from app.domains.pm.cache import load_pm_df
+from app.domains.pm.label_log import log_label
 
 router = APIRouter()
 employee_only = require_roles("corob_employee")
@@ -69,6 +70,7 @@ def review_answer(body: Answer, user: CurrentUser = Depends(employee_only)):
         save_rule(body.phrase, body.label, user.username)
     except ValueError:
         raise HTTPException(400, {"error": "bad_phrase", "message": "Phrase must be 1 to 255 characters."})
+    log_label("phrase_answer", user.username, body.label, phrase=body.phrase)
     return {"saved": True}
 
 
@@ -90,6 +92,7 @@ def review_change(rule_id: int, body: NewLabel, user: CurrentUser = Depends(empl
     _check_label(body.label)
     if not set_label(rule_id, body.label, user.username):
         raise HTTPException(404, {"error": "not_found", "message": "Rule not found."})
+    log_label("rule_change", user.username, body.label, rule_id=rule_id)
     return {"changed": True}
 
 
@@ -97,6 +100,7 @@ def review_change(rule_id: int, body: NewLabel, user: CurrentUser = Depends(empl
 def review_restore(rule_id: int, user: CurrentUser = Depends(employee_only)):
     if not set_active(rule_id, True, user.username):
         raise HTTPException(404, {"error": "not_found", "message": "Rule not found."})
+    log_label("rule_restore", user.username, None, rule_id=rule_id)
     return {"restored": True}
 
 
@@ -104,6 +108,7 @@ def review_restore(rule_id: int, user: CurrentUser = Depends(employee_only)):
 def review_remove(rule_id: int, user: CurrentUser = Depends(employee_only)):
     if not set_active(rule_id, False, user.username):
         raise HTTPException(404, {"error": "not_found", "message": "Rule not found."})
+    log_label("rule_remove", user.username, None, rule_id=rule_id)
     return {"removed": True}
 
 
@@ -140,4 +145,13 @@ def review_rows_mark(body: RowMark, user: CurrentUser = Depends(employee_only)):
         clear_overrides(pairs)
     else:
         set_overrides(pairs, body.label, user.username)
+    log_label(
+        "row_reset" if body.label is None else "row_mark",
+        user.username, body.label,
+        remark_key=body.remark_key,
+        company=body.company,
+        all_rows=body.all_rows,
+        ticket_count=len(pairs),
+        tickets=[{"company": c, "ticket_no": t} for c, t in pairs[:5000]],
+    )
     return {"updated": len(pairs)}

@@ -26,3 +26,4 @@ dist-ssr
 .env
 .env.production
 .venv/
+backend/data/
