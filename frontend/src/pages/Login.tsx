@@ -39,7 +39,7 @@ export default function Login() {
     }
 
     if (authenticated) {
-        if (roles.includes("corob_employee")) return <Navigate to="/dashboard/focus" replace />;
+        if (roles.includes("admin") || roles.includes("corob_employee")) return <Navigate to="/dashboard/focus" replace />;
         if (roles.includes("customer")) return <Navigate to="/customer/pm" replace />;
         return <Navigate to="/unauthorized" replace />;
     }

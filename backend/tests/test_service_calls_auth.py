@@ -35,8 +35,8 @@ def client():
 def test_jwt_and_role_required():
     c = client()
     for m, p in ROUTES:
-        assert c.request(m, p).status_code == 401, p                                   
-        assert c.request(m, p, headers=jwt("customer")).status_code == 403, p         
+        assert c.request(m, p).status_code == 401, p
+        assert c.request(m, p, headers=jwt("customer")).status_code == 403, p
 
 
 def test_session_is_bound_to_owner():
@@ -48,5 +48,17 @@ def test_session_is_bound_to_owner():
     with patch("app.domains.service_calls.session_auth.get_session_data", side_effect=fake):
         c = client()
         for m, p in ROUTES:
-            assert c.request(m, p, headers=jwt("corob_employee", uid=8)).status_code == 401, p  
+            assert c.request(m, p, headers=jwt("corob_employee", uid=8)).status_code == 401, p
             assert c.request(m, p, headers=jwt("corob_employee", uid=7)).status_code not in (401, 403), p
+
+
+def test_admin_has_access():
+    def fake(session_id, owner_sub):
+        return pd.DataFrame()
+
+    with patch("app.domains.service_calls.session_auth.get_session_data", side_effect=fake):
+        c = client()
+        for m, p in ROUTES:
+            assert c.request(m, p, headers=jwt("admin", uid=7)).status_code not in (401, 403), p
+            assert c.request(m, p, headers=jwt("corob_employee", uid=7)).status_code not in (401, 403), p
+            assert c.request(m, p, headers=jwt("customer", uid=7)).status_code == 403, p

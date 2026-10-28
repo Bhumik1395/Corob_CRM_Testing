@@ -48,8 +48,8 @@ export default function PmDashboard() {
     const [detailState, setDetailState] = useState("");
     const [detailMonth, setDetailMonth] = useState("");
 
-    const [employeeCompany, setEmployeeCompany] = useState(roles.includes("corob_employee") ? ALL : (myCompany ?? ""));
-    const isEmployee = roles.includes("corob_employee");
+    const isEmployee = roles.includes("corob_employee") || roles.includes("admin");
+    const [employeeCompany, setEmployeeCompany] = useState(isEmployee ? ALL : (myCompany ?? ""));
     const activeCompany = isEmployee ? employeeCompany : myCompany ?? undefined;
     const showCompanyColumn = activeCompany === ALL;
 

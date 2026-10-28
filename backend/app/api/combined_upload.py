@@ -49,7 +49,7 @@ def upload_combined(
     request: Request,
     response: Response,
     files: list[UploadFile] = File(...),
-    user: CurrentUser = Depends(require_roles("corob_employee", "admin")),
+    user: CurrentUser = Depends(require_roles("admin")),
 ):
     if not files:
         raise HTTPException(400, {"error": "no_files", "message": "No files were uploaded."})

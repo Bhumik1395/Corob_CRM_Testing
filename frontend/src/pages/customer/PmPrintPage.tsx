@@ -10,7 +10,7 @@ const monthLabel = (m: number) => new Date(2000, m - 1, 1).toLocaleString("en", 
 
 export default function PmPrintPage() {
     const { token, roles, company: myCompany } = useAuth();
-    const isEmployee = roles.includes("corob_employee");
+    const isEmployee = roles.includes("corob_employee") || roles.includes("admin");
 
     const [employeeCompany, setEmployeeCompany] = useState("");
     const [model, setModel] = useState("");

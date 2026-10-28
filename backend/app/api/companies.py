@@ -6,5 +6,5 @@ router = APIRouter()
 
 
 @router.get("/api/companies")
-def get_companies(user: CurrentUser = Depends(require_roles("corob_employee"))):
+def get_companies(user: CurrentUser = Depends(require_roles("corob_employee", "admin"))):
     return {"companies": list_companies()}

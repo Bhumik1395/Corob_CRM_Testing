@@ -30,7 +30,7 @@ export default function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
 
-                    {/* Employee dashboard — no upload route */}
+                    {/* Dashboard for Employee & Admin */}
                     <Route
                         path="/dashboard"
                         element={
@@ -44,19 +44,15 @@ export default function App() {
                         <Route path="pm" element={<PmDashboard />} />
                         <Route path="utilization" element={<EngineerUtilization />} />
                         <Route path="installation" element={<InstallationDashboard />} />
+                        <Route
+                            path="upload"
+                            element={
+                                <ProtectedRoute allowedRoles={["admin"]}>
+                                    <UploadPage />
+                                </ProtectedRoute>
+                            }
+                        />
                         <Route path="pm/print" element={<PmPrintPage />} />
-                    </Route>
-
-                    {/* Admin-only upload route */}
-                    <Route
-                        path="/dashboard/upload"
-                        element={
-                            <ProtectedRoute allowedRoles={["admin"]}>
-                                <DashboardShell />
-                            </ProtectedRoute>
-                        }
-                    >
-                        <Route index element={<UploadPage />} />
                     </Route>
 
                     {/* Customer dashboard — no upload route */}

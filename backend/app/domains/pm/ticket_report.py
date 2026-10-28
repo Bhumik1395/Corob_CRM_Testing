@@ -20,7 +20,7 @@ from app.domains.service_calls.pdf_service import _data_uri_only_fetcher
 log = logging.getLogger(__name__)
 
 router = APIRouter()
-any_user = require_roles("customer", "corob_employee")
+any_user = require_roles("customer", "corob_employee", "admin")
 
 _env = Environment(
     loader=FileSystemLoader(Path(__file__).resolve().parent / "templates"),

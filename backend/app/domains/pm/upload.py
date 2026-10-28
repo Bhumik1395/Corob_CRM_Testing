@@ -16,7 +16,7 @@ MAX_FILES = 10
 @router.post("/api/pm/upload", dependencies=[Depends(rate_limit("upload", 10, 600))])
 def upload_pm_data(
     files: list[UploadFile] = File(...),
-    user: CurrentUser = Depends(require_roles("customer", "corob_employee", "admin")),
+    user: CurrentUser = Depends(require_roles("admin")),
 ):
     if not files:
         raise HTTPException(400, {"error": "no_files", "message": "No files were uploaded."})

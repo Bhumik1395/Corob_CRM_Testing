@@ -12,7 +12,7 @@ export default function PmUploadPage() {
     const [progress, setProgress] = useState(0);
     const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
-    const isEmployee = roles.includes("corob_employee");
+    const isEmployee = roles.includes("corob_employee") || roles.includes("admin");
     const dashboardPath = isEmployee ? "/dashboard/pm" : "/customer/pm";
 
     const mutation = useMutation({

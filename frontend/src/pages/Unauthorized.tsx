@@ -7,7 +7,7 @@ export default function Unauthorized() {
             <div className="bg-white rounded-xl border p-10 w-[440px] text-center" style={{ borderColor: "var(--color-border)" }}>
                 <h2 className="text-xl font-semibold mb-2">No access</h2>
                 <p className="text-sm text-gray-500 mb-6">
-                    Your account doesn't have the "customer" or "corob_employee" role assigned yet.
+                    Your account doesn't have the "customer", "corob_employee", or "admin" role assigned yet.
                     Contact your admin to get access.
                 </p>
                 <button
