@@ -1,7 +1,7 @@
 import { Fragment, useState } from "react";
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { ChevronDown, ChevronRight } from "lucide-react";
-import { answerReview, getReviewRemarks, getRemarkRows, markRemarkRows } from "../api/pm";
+import { ChevronDown, ChevronRight, Download } from "lucide-react";
+import { answerReview, getReviewRemarks, getRemarkRows, markRemarkRows, downloadRemarksExcel } from "../api/pm";
 import type { RemarkRow, RemarkTicketRow } from "../api/pm";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { Pagination } from "./ui/Pagination";
@@ -186,6 +186,8 @@ export function PmRemarkReview({ token, company }: { token: string; company: str
     const [searchInput, setSearchInput] = useState("");
     const [page, setPage] = useState(1);
     const [expanded, setExpanded] = useState<string | null>(null);
+    const [exporting, setExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
     const search = useDebouncedValue(searchInput, 400);
 
     const { data, isLoading, isError } = useQuery({
@@ -206,6 +208,18 @@ export function PmRemarkReview({ token, company }: { token: string; company: str
     });
 
     const pendingKey = save.isPending ? save.variables?.key : null;
+
+    const handleExport = async () => {
+        setExportError(null);
+        setExporting(true);
+        try {
+            await downloadRemarksExcel(token, company, { status, search });
+        } catch (e: any) {
+            setExportError(e?.message ?? "Could not export.");
+        } finally {
+            setExporting(false);
+        }
+    };
 
     return (
         <div className="bg-white rounded-xl border mb-4" style={{ borderColor: "var(--color-border)" }}>
@@ -235,10 +249,21 @@ export function PmRemarkReview({ token, company }: { token: string; company: str
                                 </button>
                             ))}
                         </div>
-                        <input value={searchInput}
-                            onChange={(e) => { setPage(1); setSearchInput(e.target.value); }}
-                            placeholder="Search remarks…" aria-label="Search remarks"
-                            className="border rounded-lg px-3 py-1.5 text-sm w-64" />
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleExport}
+                                disabled={exporting || !data || data.total === 0}
+                                className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50"
+                                title="Download the rows for the current filter as Excel"
+                            >
+                                <Download size={14} />
+                                {exporting ? "Exporting…" : "Export Excel"}
+                            </button>
+                            <input value={searchInput}
+                                onChange={(e) => { setPage(1); setSearchInput(e.target.value); }}
+                                placeholder="Search remarks…" aria-label="Search remarks"
+                                className="border rounded-lg px-3 py-1.5 text-sm w-64" />
+                        </div>
                     </div>
 
                     {isLoading && <p className="text-sm text-gray-500">Loading…</p>}
@@ -311,6 +336,7 @@ export function PmRemarkReview({ token, company }: { token: string; company: str
                     )}
 
                     {save.isError && <p className="text-xs text-red-600 mt-2">Could not save that answer. Please try again.</p>}
+                    {exportError && <p className="text-xs text-red-600 mt-2">{exportError}</p>}
                 </div>
             )}
         </div>

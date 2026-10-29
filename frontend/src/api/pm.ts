@@ -348,3 +348,28 @@ export async function markRemarkRows(
     });
     return handle<{ updated: number }>(res);
 }
+
+export async function downloadRemarksExcel(
+    token: string,
+    company: string | undefined,
+    opts: { status: string; search?: string }
+): Promise<void> {
+    const params = new URLSearchParams({ status: opts.status });
+    if (company) params.set("company", company);
+    if (opts.search) params.set("search", opts.search);
+
+    const res = await fetch(`${API_BASE}/api/pm/review/export?${params}`, { headers: authHeaders(token) });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw body?.detail ?? body ?? { message: "Could not export." };
+    }
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `PM Remarks - ${opts.status}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+}

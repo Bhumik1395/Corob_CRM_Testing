@@ -1,13 +1,25 @@
+import io
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
+from openpyxl import Workbook
+import pandas as pd
+from openpyxl import Workbook
+from openpyxl.styles import Alignment
+from openpyxl.worksheet.table import Table, TableStyleInfo
 from pydantic import BaseModel
 
+from app.core.audit import audit
 from app.core.auth import CurrentUser, require_roles
-from app.domains.pm.outcome import (next_question, count_matches, list_remarks,
+from app.core.rate_limit import rate_limit
+from app.domains.pm.outcome import (next_question, count_matches, list_remarks, export_rows,
                                     rows_for_remark, tickets_for_remark, DONE, DISPUTE)
 from app.domains.pm.overrides_store import set_overrides, clear_overrides
 from app.domains.pm.rules_store import (get_learned_rules, save_rule, list_history, set_label, set_active)
 from app.domains.pm.cache import load_pm_df
 from app.domains.pm.label_log import log_label
+from app.shared.employee_mapping_service import load_employee_mapping, load_supervisor_mapping
 
 router = APIRouter()
 employee_only = require_roles("corob_employee", "admin")
@@ -62,6 +74,73 @@ def review_remarks(
         raise HTTPException(404, {"error": "no_data", "message": "No PM data uploaded yet for this company."})
     return list_remarks(df, get_learned_rules(), status=status, search=search, page=max(page, 1), page_size=min(max(page_size, 1), 100))
 
+
+_ILLEGAL = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+_HEADERS = ["Ticket", "Dealer", "Employee name", "Supervisor name", "Date", "Remark"]
+_WIDTHS = [24, 36, 26, 26, 13, 80]
+
+
+def _text(v) -> str:
+    return _ILLEGAL.sub("", "" if v is None else str(v))
+
+
+@router.get("/api/pm/review/export", dependencies=[Depends(rate_limit("export", 20, 60))])
+def review_export(
+    company: str | None = None,
+    status: str = "all",
+    search: str = "",
+    user: CurrentUser = Depends(employee_only),
+):
+    if status not in ("all", "unresolved", "done", "dispute"):
+        raise HTTPException(400, {"error": "bad_status", "message": "Unknown status filter."})
+    df = load_pm_df(user, company)
+    if df is None:
+        raise HTTPException(404, {"error": "no_data", "message": "No PM data uploaded yet for this company."})
+
+    rows = export_rows(df, get_learned_rules(), status=status, search=search)
+
+    names, sups = load_employee_mapping(), load_supervisor_mapping()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Remarks"
+    ws.append(_HEADERS)
+
+    top_wrap = Alignment(vertical="top", wrap_text=True)
+    n = 0
+    for r in rows.to_dict("records"):
+        code = str(r.get("eng_code", "") or "").strip()
+        emp = names.get(code) or r.get("employee_name") or ""
+        sup = r.get("supervisor") or sups.get(code) or ""
+        d_name, d_code = str(r.get("dealer_name") or ""), str(r.get("dealer_code") or "")
+        dealer = f"{d_name} ({d_code})" if d_name and d_code else d_name or d_code
+        d = r.get("call_date")
+        date = d.date() if pd.notna(d) and hasattr(d, "date") else None
+
+        ws.append([_text(r.get("ticket_no")), _text(dealer), _text(emp), _text(sup), date, _text(r.get("remarks"))])
+        n += 1
+        for c in ws[n + 1]:
+            if isinstance(c.value, str):
+                c.data_type = "s"          # a remark starting with "=" must never become a formula
+            c.alignment = top_wrap
+        ws.cell(row=n + 1, column=5).number_format = "yyyy-mm-dd"
+
+    for i, w in enumerate(_WIDTHS):
+        ws.column_dimensions[chr(65 + i)].width = w
+    ws.freeze_panes = "A2"
+
+    if n:
+        table = Table(displayName="PMRemarks", ref=f"A1:F{n + 1}")
+        table.tableStyleInfo = TableStyleInfo(name="TableStyleMedium7", showRowStripes=True)
+        ws.add_table(table)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    audit(user.username, "pm_remarks_export", f"{status} / {n} rows")
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="PM_Remarks.xlsx"'},
+    )
 
 @router.post("/api/pm/review/answer")
 def review_answer(body: Answer, user: CurrentUser = Depends(employee_only)):

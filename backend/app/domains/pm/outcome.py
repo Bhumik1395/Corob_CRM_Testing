@@ -192,3 +192,29 @@ def rows_for_remark(df, learned, key, page=1, page_size=25):
     out = out.fillna("")
     return {"rows": out.to_dict("records"), "total": len(m), "page": page,
             "pageSize": page_size, "counts": counts}
+
+def export_rows(df, learned, status="all", search=""):
+    """Every ticket row whose remark matches the Review-every-remark filter."""
+    if "remarks" not in df.columns:
+        return df.iloc[0:0]
+    learned = tuple(learned)
+    raw = df["remarks"].fillna("").astype(str)
+    uniq = raw.unique()
+    keys = raw.map({x: norm(x) for x in uniq})
+    labels = raw.map({x: label_text(x, learned)[0] for x in uniq})
+    mask = keys != ""
+    if status == "unresolved":
+        mask &= labels.isna()
+    elif status == "done":
+        mask &= labels == DONE
+    elif status == "dispute":
+        mask &= labels == DISPUTE
+
+    q = norm(search)
+    if q:
+        mask &= keys.str.contains(q, regex=False)
+
+    out = df[mask].copy()
+    if "call_date" in out.columns:
+        out = out.sort_values("call_date", ascending=False)
+    return out
